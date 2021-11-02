@@ -1,8 +1,10 @@
 package ol.ko.docshortcut
 
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import android.widget.RemoteViews
 
@@ -34,8 +36,18 @@ class ShortcutAppWidget : AppWidgetProvider() {
 
 internal fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int, fileUriString: String?) {
     // Construct the RemoteViews object
-    val views = RemoteViews(context.packageName, R.layout.shortcut_app_widget)
-    views.setTextViewText(R.id.file_uri, fileUriString?: context.getString(R.string.data_not_found))
+    val views = RemoteViews(context.packageName, R.layout.shortcut_app_widget).apply {
+        setTextViewText(R.id.file_uri, fileUriString ?: context.getString(R.string.data_not_found))
+        setOnClickPendingIntent(R.id.container, PendingIntent.getActivity(
+                context,
+                MainActivity.PROXY_REQUEST,
+                Intent(context, MainActivity::class.java)
+                    .putExtra(MainActivity.PROXY_REQUEST_KEY, true)
+                    .putExtra(MainActivity.EXTRA_APP_WIDGET_ID, appWidgetId),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        )
+    }
 
     // Instruct the widget manager to update the widget
     appWidgetManager.updateAppWidget(appWidgetId, views)
