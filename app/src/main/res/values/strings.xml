@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">DocShortcut</string>
+    <string name="appwidget_text">File Uri</string>
+    <string name="app_widget_description">Create a file shortcut on home screen</string>
+    <string name="select_file">Select a file</string>
+    <string name="data_not_found">Settings not found</string>
+    <string name="main_activity_prompt">Use system Widgets tool to set up your shortcuts</string>
+</resources>
