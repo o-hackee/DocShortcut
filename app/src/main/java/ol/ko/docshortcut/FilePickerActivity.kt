@@ -38,9 +38,8 @@ class FilePickerActivity : AppCompatActivity() {
         }
     }
 
-    // TODO only document?
     private fun selectDocument() {
-        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             type = "*/*"
             addCategory(Intent.CATEGORY_OPENABLE)
             putExtra(Intent.EXTRA_LOCAL_ONLY, true)
@@ -57,6 +56,9 @@ class FilePickerActivity : AppCompatActivity() {
 
         val fileUriString = data?.data?.toString()
         Log.i("OLKO", "appWidgetId $appWidgetId uri $fileUriString")
+        data?.data?.let {
+            contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
 
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID)
             return

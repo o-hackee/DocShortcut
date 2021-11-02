@@ -6,8 +6,6 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 
-// TODO can i get rid of activity?
-
 class MainActivity : AppCompatActivity() {
 
     companion object {
@@ -25,16 +23,13 @@ class MainActivity : AppCompatActivity() {
             if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
                 val fileUriString = ShortcutSharedPrefsUtil.loadUriPref(this, appWidgetId)
                 fileUriString?.let {
-                    // TODO a better way to get MIME type?
                     val uri = Uri.parse(fileUriString)
                     val mime = contentResolver.getType(uri)
                     val intent = Intent().apply {
                         action = Intent.ACTION_VIEW
                         setDataAndType(uri, mime)
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-
                     }
-                    // TODO permission!!
                     startActivity(intent)
                 }
             }
