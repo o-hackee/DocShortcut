@@ -5,10 +5,16 @@ import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.OpenableColumns
 import android.util.Log
 import android.widget.RemoteViews
 
 // TODO if not only for private use: go through API 30 & 31
+// TODO protestirovat' app update, reboot, file got removed, ...
+// some automated tests too?
+
+// TODO ne cleanup-s'a zhe zapisi v shared_prefs pri udalenii itema!
 
 /**
  * Implementation of App Widget functionality.
@@ -35,9 +41,10 @@ class ShortcutAppWidget : AppWidgetProvider() {
 }
 
 internal fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int, fileUriString: String?) {
+    val fileName = fileUriString?.getFilename(context) ?: context.getString(R.string.data_not_found)
     // Construct the RemoteViews object
     val views = RemoteViews(context.packageName, R.layout.shortcut_app_widget).apply {
-        setTextViewText(R.id.file_uri, fileUriString ?: context.getString(R.string.data_not_found))
+        setTextViewText(R.id.file_uri, fileName)
         setOnClickPendingIntent(R.id.container, PendingIntent.getActivity(
                 context,
                 MainActivity.PROXY_REQUEST,
@@ -51,4 +58,15 @@ internal fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManage
 
     // Instruct the widget manager to update the widget
     appWidgetManager.updateAppWidget(appWidgetId, views)
+}
+
+private fun String.getFilename(context: Context): String {
+    Uri.parse(this)?.let { returnUri ->
+        context.contentResolver.query(returnUri, null, null, null, null)
+    }?.use { cursor ->
+        val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        cursor.moveToFirst()
+        return cursor.getString(nameIndex)
+    }
+    return context.getString(R.string.unknown_document)
 }

@@ -3,11 +3,9 @@ package ol.ko.docshortcut
 import android.app.Activity
 import android.appwidget.AppWidgetManager
 import android.content.Intent
-import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import android.widget.RemoteViews
 import ol.ko.docshortcut.databinding.ActivityFilePickerBinding
 
 class FilePickerActivity : AppCompatActivity() {
@@ -27,7 +25,7 @@ class FilePickerActivity : AppCompatActivity() {
 
         val binding = ActivityFilePickerBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        title = getString(R.string.select_file)
+        title = getString(R.string.select_document)
 
         // Find the widget id from the intent.
         appWidgetId = intent?.extras?.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
