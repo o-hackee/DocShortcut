@@ -5,7 +5,8 @@ import android.appwidget.AppWidgetManager
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import ol.ko.docshortcut.databinding.ActivityFilePickerBinding
 
 class FilePickerActivity : AppCompatActivity() {
@@ -19,7 +20,7 @@ class FilePickerActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Set the result to CANCELED.  This will cause the widget host to cancel
+        // Set the result to CANCELED. This will cause the widget host to cancel
         // out of the widget placement if the user presses the back button.
         setResult(RESULT_CANCELED)
 
@@ -52,15 +53,19 @@ class FilePickerActivity : AppCompatActivity() {
         if (requestCode != REQUEST_DOC_GET || resultCode != Activity.RESULT_OK)
             return
 
-        val fileUriString = data?.data?.toString()
-        Log.i("OLKO", "appWidgetId $appWidgetId uri $fileUriString")
-        data?.data?.let {
+        val fileUri = data?.data
+        fileUri?.let {
             contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
 
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID)
             return
-        ShortcutSharedPrefsUtil.saveUriPref(this, appWidgetId, fileUriString)
+        val fileUriString = fileUri?.toString()
+        fileUriString?.let {
+            lifecycleScope.launch {
+                FileUrisSettings(this@FilePickerActivity).saveUriPref(appWidgetId, it)
+            }
+        }
 
         // It is the responsibility of the configuration activity to update the app widget
         val appWidgetManager = AppWidgetManager.getInstance(this)

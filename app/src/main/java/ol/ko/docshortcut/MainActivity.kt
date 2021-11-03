@@ -4,7 +4,10 @@ import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import android.os.Bundle
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -21,16 +24,20 @@ class MainActivity : AppCompatActivity() {
         if (intent?.getBooleanExtra(PROXY_REQUEST_KEY, false) == true) {
             val appWidgetId = intent?.getIntExtra(EXTRA_APP_WIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID) ?: AppWidgetManager.INVALID_APPWIDGET_ID
             if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                val fileUriString = ShortcutSharedPrefsUtil.loadUriPref(this, appWidgetId)
-                fileUriString?.let {
-                    val uri = Uri.parse(fileUriString)
-                    val mime = contentResolver.getType(uri)
-                    val intent = Intent().apply {
-                        action = Intent.ACTION_VIEW
-                        setDataAndType(uri, mime)
-                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                val fileUriString = FileUrisSettings(this).loadUriPref(appWidgetId)
+                lifecycleScope.launch {
+                    fileUriString.collect {
+                        it?.let {
+                            val uri = Uri.parse(it)
+                            val mime = contentResolver.getType(uri)
+                            val intent = Intent().apply {
+                                action = Intent.ACTION_VIEW
+                                setDataAndType(uri, mime)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            startActivity(intent)
+                        }
                     }
-                    startActivity(intent)
                 }
             }
         }

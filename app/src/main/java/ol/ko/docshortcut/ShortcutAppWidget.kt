@@ -7,14 +7,15 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
-import android.util.Log
 import android.widget.RemoteViews
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
 // TODO if not only for private use: go through API 30 & 31
 // TODO protestirovat' app update, reboot, file got removed, ...
 // some automated tests too?
-
-// TODO ne cleanup-s'a zhe zapisi v shared_prefs pri udalenii itema!
 
 /**
  * Implementation of App Widget functionality.
@@ -24,10 +25,12 @@ class ShortcutAppWidget : AppWidgetProvider() {
         // There may be multiple widgets active, so update all of them
         for (appWidgetId in appWidgetIds) {
 
-            val fileUriString = ShortcutSharedPrefsUtil.loadUriPref(context, appWidgetId)
-            Log.i("OLKO", "appWidgetId $appWidgetId loaded uri $fileUriString")
-
-            updateAppWidget(context, appWidgetManager, appWidgetId, fileUriString)
+            val fileUriString = FileUrisSettings(context).loadUriPref(appWidgetId)
+            CoroutineScope(Dispatchers.Main).launch {
+                fileUriString.collect {
+                    updateAppWidget(context, appWidgetManager, appWidgetId, it)
+                }
+            }
         }
     }
 
@@ -37,6 +40,14 @@ class ShortcutAppWidget : AppWidgetProvider() {
 
     override fun onDisabled(context: Context) {
         // Enter relevant functionality for when the last widget is disabled
+    }
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        for (appWidgetId in appWidgetIds) {
+            CoroutineScope(Dispatchers.Main).launch {
+                FileUrisSettings(context).deleteWidgetLayoutIdPref(appWidgetId)
+            }
+        }
     }
 }
 
