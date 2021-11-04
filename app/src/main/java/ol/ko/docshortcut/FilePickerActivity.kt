@@ -1,10 +1,14 @@
 package ol.ko.docshortcut
 
-import android.app.Activity
 import android.appwidget.AppWidgetManager
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import ol.ko.docshortcut.databinding.ActivityFilePickerBinding
@@ -12,10 +16,19 @@ import ol.ko.docshortcut.databinding.ActivityFilePickerBinding
 class FilePickerActivity : AppCompatActivity() {
 
     companion object {
-        const val REQUEST_DOC_GET = 1
+        private val TAG = FilePickerActivity::class.java.simpleName
     }
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
+    private val pickDocument = registerForActivityResult(object : ActivityResultContracts.OpenDocument() {
+
+            override fun createIntent(context: Context, input: Array<out String>): Intent {
+                return super.createIntent(context, input).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    putExtra(Intent.EXTRA_LOCAL_ONLY, true)
+                }
+            }
+        }, ::fileSelected)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -31,32 +44,22 @@ class FilePickerActivity : AppCompatActivity() {
         // Find the widget id from the intent.
         appWidgetId = intent?.extras?.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
             ?: AppWidgetManager.INVALID_APPWIDGET_ID
-
-        binding.button.setOnClickListener {
-            selectDocument()
-        }
-    }
-
-    private fun selectDocument() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            type = "*/*"
-            addCategory(Intent.CATEGORY_OPENABLE)
-            putExtra(Intent.EXTRA_LOCAL_ONLY, true)
-        }
-        if (intent.resolveActivity(packageManager) != null) {
-            // TODO
-            startActivityForResult(Intent.createChooser(intent, "Select a file"), REQUEST_DOC_GET)
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode != REQUEST_DOC_GET || resultCode != Activity.RESULT_OK)
-            return
-
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID)
             return
 
-        val fileUri = data?.data
+        binding.button.setOnClickListener {
+            try {
+                pickDocument.launch(arrayOf("*/*"))
+            } catch (ex: ActivityNotFoundException) {
+                Log.e(TAG, "Couldn't start an activity to pick a document")
+            }
+        }
+    }
+
+    private fun fileSelected(fileUri: Uri?) {
+        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID)
+            return
+
         fileUri?.let {
             contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
