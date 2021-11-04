@@ -56,15 +56,18 @@ internal fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManage
     // Construct the RemoteViews object
     val views = RemoteViews(context.packageName, R.layout.shortcut_app_widget).apply {
         setTextViewText(R.id.file_uri, fileName)
-        setOnClickPendingIntent(R.id.container, PendingIntent.getActivity(
-                context,
-                MainActivity.PROXY_REQUEST,
-                Intent(context, MainActivity::class.java)
-                    .putExtra(MainActivity.PROXY_REQUEST_KEY, true)
-                    .putExtra(MainActivity.EXTRA_APP_WIDGET_ID, appWidgetId),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        fileUriString?.let {
+            setOnClickPendingIntent(
+                R.id.container, PendingIntent.getActivity(
+                    context,
+                    MainActivity.PROXY_REQUEST,
+                    Intent(context, MainActivity::class.java)
+                        .putExtra(MainActivity.EXTRA_PROXY_REQUEST_KEY, true)
+                        .putExtra(MainActivity.EXTRA_URI_KEY, it),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
             )
-        )
+        }
     }
 
     // Instruct the widget manager to update the widget

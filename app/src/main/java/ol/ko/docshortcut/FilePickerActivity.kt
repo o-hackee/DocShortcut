@@ -53,13 +53,13 @@ class FilePickerActivity : AppCompatActivity() {
         if (requestCode != REQUEST_DOC_GET || resultCode != Activity.RESULT_OK)
             return
 
+        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID)
+            return
+
         val fileUri = data?.data
         fileUri?.let {
             contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-
-        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID)
-            return
         val fileUriString = fileUri?.toString()
         fileUriString?.let {
             lifecycleScope.launch {
