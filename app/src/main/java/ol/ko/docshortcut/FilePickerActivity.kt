@@ -9,8 +9,6 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import ol.ko.docshortcut.databinding.ActivityFilePickerBinding
 
-// TODO na 30 ne rabotaet
-
 class FilePickerActivity : AppCompatActivity() {
 
     companion object {
