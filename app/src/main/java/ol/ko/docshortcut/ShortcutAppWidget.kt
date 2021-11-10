@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 // TODO if not only for private use: go through API 30 & 31
-// TODO protestirovat' app update, reboot, file got removed, ...
+// TODO protestirovat' app update, reboot, file got removed, file not picked, ...
 // some automated tests too?
 
 /**
