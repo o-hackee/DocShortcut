@@ -57,17 +57,13 @@ class FilePickerActivity : AppCompatActivity() {
     }
 
     private fun fileSelected(fileUri: Uri?) {
-        if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID)
+        if (fileUri == null || appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID)
             return
 
-        fileUri?.let {
-            contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        val fileUriString = fileUri?.toString()
-        fileUriString?.let {
-            lifecycleScope.launch {
-                FileUrisSettings(this@FilePickerActivity).saveUriPref(appWidgetId, it)
-            }
+        contentResolver.takePersistableUriPermission(fileUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val fileUriString = fileUri.toString()
+        lifecycleScope.launch {
+            FileUrisSettings(this@FilePickerActivity).saveUriPref(appWidgetId, fileUriString)
         }
 
         // It is the responsibility of the configuration activity to update the app widget
