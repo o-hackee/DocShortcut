@@ -16,7 +16,7 @@ import ol.ko.docshortcut.databinding.ActivityFilePickerBinding
 class FilePickerActivity : AppCompatActivity() {
 
     companion object {
-        private val TAG = FilePickerActivity::class.java.simpleName
+        private val TAG = "OLKO"
     }
 
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID

@@ -13,7 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
-// TODO if not only for private use: go through API 30 & 31
 // TODO protestirovat' app update, reboot, file got removed, file not picked, ...
 // some automated tests too?
 
@@ -21,6 +20,7 @@ import kotlinx.coroutines.launch
  * Implementation of App Widget functionality.
  */
 class ShortcutAppWidget : AppWidgetProvider() {
+
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         // There may be multiple widgets active, so update all of them
         for (appWidgetId in appWidgetIds) {
@@ -32,14 +32,6 @@ class ShortcutAppWidget : AppWidgetProvider() {
                 }
             }
         }
-    }
-
-    override fun onEnabled(context: Context) {
-        // Enter relevant functionality for when the first widget is created
-    }
-
-    override fun onDisabled(context: Context) {
-        // Enter relevant functionality for when the last widget is disabled
     }
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
