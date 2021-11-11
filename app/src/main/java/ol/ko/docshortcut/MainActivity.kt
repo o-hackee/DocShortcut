@@ -14,7 +14,7 @@ import ol.ko.docshortcut.databinding.ActivityMainBinding
 class MainActivity : AppCompatActivity() {
 
     companion object {
-        private val TAG = "OLKO"
+        private const val TAG = "OLKO"
 
         const val PROXY_REQUEST = 1
         const val EXTRA_PROXY_REQUEST_KEY = "PROXY_REQUEST"

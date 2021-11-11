@@ -13,9 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
-// TODO protestirovat' app update, reboot, file got removed, file not picked, ...
-// some automated tests too?
-
 /**
  * Implementation of App Widget functionality.
  */
