@@ -25,7 +25,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(TAG, "onCreate $intent")
+        Log.d(TAG, "onCreate ${intent.action} ${intent.extras?.keySet()?.joinToString()}")
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -44,10 +44,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        Log.d(TAG, "onStart $intent")
+        Log.d(TAG, "onStart ${intent.action} ${intent.extras}")
 
-        // the problem is only observed on API 29 emulator so far, however it would be nice to have an update feature built-in
-        // updateAllWidgets()
+        // the problem is steadily observed on API 29 emulator and sporadically - on real device
+        updateAllWidgets()
     }
 
     private fun close() {
@@ -81,7 +81,7 @@ class MainActivity : AppCompatActivity() {
                     appWidgetIds
                 )
             )
-            Toast.makeText(this, R.string.updating, Toast.LENGTH_SHORT).show()
+//            Toast.makeText(this, R.string.updating, Toast.LENGTH_SHORT).show()
         }
     }
 }
