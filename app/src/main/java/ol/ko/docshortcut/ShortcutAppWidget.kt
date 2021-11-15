@@ -49,7 +49,7 @@ internal fun updateAppWidget(context: Context, appWidgetManager: AppWidgetManage
             setOnClickPendingIntent(
                 R.id.container, PendingIntent.getActivity(
                     context,
-                    MainActivity.PROXY_REQUEST,
+                    MainActivity.PROXY_REQUEST + appWidgetId,
                     Intent(context, MainActivity::class.java)
                         .putExtra(MainActivity.EXTRA_PROXY_REQUEST_KEY, true)
                         .putExtra(MainActivity.EXTRA_URI_KEY, it),
