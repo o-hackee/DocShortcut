@@ -1,6 +1,21 @@
+import java.text.SimpleDateFormat
+
 plugins {
     id 'com.android.application'
     id 'kotlin-android'
+}
+
+ext.prepareVersionCode = {
+    def buildNumber = System.getenv("BUILD_NUMBER") as String ?: "1"
+    buildNumber = buildNumber as Integer
+    buildNumber %= 100 // take the last 2 digits
+    def buildString = (buildNumber as String).padLeft(2, '0')
+
+    def date = new SimpleDateFormat("yyyyMMdd").format(new Date())
+    def versionCode = date + buildString
+
+    println("versionCode: $versionCode")
+    return versionCode as Integer
 }
 
 def keystorePropertiesFile = rootProject.file("keystore.properties")
@@ -22,7 +37,7 @@ android {
         applicationId "ol.ko.docshortcut"
         minSdk 23
         targetSdk 31
-        versionCode 1
+        versionCode prepareVersionCode()
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
