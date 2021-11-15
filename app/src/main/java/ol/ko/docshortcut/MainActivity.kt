@@ -47,7 +47,7 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "onStart $intent")
 
         // the problem is only observed on API 29 emulator so far, however it would be nice to have an update feature built-in
-        updateAllWidgets()
+        // updateAllWidgets()
     }
 
     private fun close() {
