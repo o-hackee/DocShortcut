@@ -17,8 +17,7 @@ object ShortcutWidgetUtils {
         appWidgetId: Int,
         fileUriString: String?
     ) {
-        val fileName =
-            fileUriString?.getFilename(context) ?: context.getString(R.string.data_not_found)
+        val fileName = fileUriString?.getFilename(context) ?: context.getString(R.string.data_not_found)
         // Construct the RemoteViews object
         val views = RemoteViews(context.packageName, R.layout.shortcut_app_widget).apply {
             setTextViewText(R.id.file_uri, fileName)

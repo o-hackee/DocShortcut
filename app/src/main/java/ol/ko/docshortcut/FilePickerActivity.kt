@@ -22,13 +22,13 @@ class FilePickerActivity : AppCompatActivity() {
     private var appWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID
     private val pickDocument = registerForActivityResult(object : ActivityResultContracts.OpenDocument() {
 
-            override fun createIntent(context: Context, input: Array<out String>): Intent {
-                return super.createIntent(context, input).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                    putExtra(Intent.EXTRA_LOCAL_ONLY, true)
-                }
+        override fun createIntent(context: Context, input: Array<out String>): Intent {
+            return super.createIntent(context, input).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                putExtra(Intent.EXTRA_LOCAL_ONLY, true)
             }
-        }, ::fileSelected)
+        }
+    }, ::fileSelected)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
