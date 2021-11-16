@@ -8,6 +8,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.widget.RemoteViews
+import androidx.core.content.ContextCompat
 
 object ShortcutWidgetUtils {
 
@@ -15,12 +16,18 @@ object ShortcutWidgetUtils {
         context: Context,
         appWidgetManager: AppWidgetManager,
         appWidgetId: Int,
-        fileUriString: String?
+        fileUriString: String?,
+        isValid: Boolean = true
     ) {
         val fileName = fileUriString?.getFilename(context) ?: context.getString(R.string.data_not_found)
         // Construct the RemoteViews object
         val views = RemoteViews(context.packageName, R.layout.shortcut_app_widget).apply {
-            setTextViewText(R.id.file_uri, fileName)
+            with (R.id.file_uri) {
+                setTextViewText(this, fileName)
+                // couldn't obtain the colors from the theme
+                val color = ContextCompat.getColor(context, if (isValid) R.color.on_primary else R.color.error_workaround)
+                setTextColor(this, color)
+            }
             fileUriString?.let {
                 setOnClickPendingIntent(
                     R.id.container, PendingIntent.getActivity(
