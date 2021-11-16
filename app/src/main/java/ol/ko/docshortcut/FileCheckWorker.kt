@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 class FileCheckWorker(appContext: Context, workerParams: WorkerParameters) :
     CoroutineWorker(appContext, workerParams) {
     companion object {
-        const val workName = "fileCheckWorker"
+        private const val workName = "fileCheckWorker"
         private const val repeatIntervalInDays = 1L
         private const val flexIntervalInHours = 1L
 
@@ -37,6 +37,9 @@ class FileCheckWorker(appContext: Context, workerParams: WorkerParameters) :
                 checkFilesWorkRequest
             )
         }
+
+        fun stop(context: Context) =
+            WorkManager.getInstance(context).cancelUniqueWork(workName)
     }
 
     override suspend fun doWork(): Result {

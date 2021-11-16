@@ -1,8 +1,6 @@
 package ol.ko.docshortcut
 
-import android.appwidget.AppWidgetManager
 import android.content.ActivityNotFoundException
-import android.content.ComponentName
 import android.content.Intent
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -47,7 +45,7 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "onStart ${intent.action} ${intent.extras}")
 
         // the problem is steadily observed on API 29 emulator and sporadically - on real device
-        updateAllWidgets()
+        ShortcutWidgetUtils.requestWidgetsUpdate(this)
     }
 
     private fun close() {
@@ -68,20 +66,6 @@ class MainActivity : AppCompatActivity() {
         } catch (ex: ActivityNotFoundException) {
             Log.e(TAG, "Couldn't start an activity to view a document $fileUriString")
             Toast.makeText(this, "Can't view a document $fileUriString", Toast.LENGTH_LONG).show()
-        }
-    }
-
-    private fun updateAllWidgets() {
-        val appWidgetManager = AppWidgetManager.getInstance(this)
-        val appWidgetIds = appWidgetManager.getAppWidgetIds(ComponentName(this, ShortcutAppWidget::class.java))
-        if (appWidgetIds.isNotEmpty()) {
-            sendBroadcast(
-                Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE).putExtra(
-                    AppWidgetManager.EXTRA_APPWIDGET_IDS,
-                    appWidgetIds
-                )
-            )
-//            Toast.makeText(this, R.string.updating, Toast.LENGTH_SHORT).show()
         }
     }
 }

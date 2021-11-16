@@ -68,7 +68,7 @@ class FilePickerActivity : AppCompatActivity() {
 
         // It is the responsibility of the configuration activity to update the app widget
         val appWidgetManager = AppWidgetManager.getInstance(this)
-        updateAppWidget(this, appWidgetManager, appWidgetId, fileUriString)
+        ShortcutWidgetUtils.updateAppWidget(this, appWidgetManager, appWidgetId, fileUriString)
 
         // Make sure we pass back the original appWidgetId
         val resultValue = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
