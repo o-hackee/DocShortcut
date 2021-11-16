@@ -8,6 +8,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.widget.RemoteViews
+import androidx.work.WorkManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
@@ -34,9 +35,19 @@ class ShortcutAppWidget : AppWidgetProvider() {
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         for (appWidgetId in appWidgetIds) {
             CoroutineScope(Dispatchers.Main).launch {
-                FileUrisSettings(context).deleteWidgetLayoutIdPref(appWidgetId)
+                FileUrisSettings(context).deleteUriPref(appWidgetId)
             }
         }
+    }
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        FileCheckWorker.start(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        WorkManager.getInstance(context).cancelUniqueWork(FileCheckWorker.workName)
     }
 }
 

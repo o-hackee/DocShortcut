@@ -40,9 +40,14 @@ class FileUrisSettings(
         prefs[keyFileUri(appWidgetId)]
     }
 
-    internal suspend fun deleteWidgetLayoutIdPref(appWidgetId: Int) = withContext(ioDispatcher) {
+    internal suspend fun deleteUriPref(appWidgetId: Int) = withContext(ioDispatcher) {
         context.prefsDataStore.edit { prefs ->
             prefs.minusAssign(keyFileUri(appWidgetId))
         }
     }
+
+    internal fun allUriPrefs(): Flow<List<String>> =
+        context.prefsDataStore.data.map { prefs ->
+            prefs.asMap().values.mapNotNull { it as? String }
+        }
 }
