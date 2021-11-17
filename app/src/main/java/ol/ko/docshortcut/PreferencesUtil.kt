@@ -46,8 +46,13 @@ class FileUrisSettings(
         }
     }
 
-    internal fun allUriPrefs(): Flow<List<String>> =
+    internal fun allUriPrefs(): Flow<List<Pair<Int?, String?>>> =
         context.prefsDataStore.data.map { prefs ->
-            prefs.asMap().values.mapNotNull { it as? String }
+            prefs.asMap().mapNotNull { entry ->
+                if (entry.key.name.startsWith(PREF_PREFIX_KEY)) {
+                    entry.key.name.substring(PREF_PREFIX_KEY.length).toIntOrNull() to entry.value as? String
+                } else
+                    null
+            }
         }
 }

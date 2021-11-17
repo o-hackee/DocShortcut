@@ -13,5 +13,6 @@
     <color name="brown_800">#FF1B0000</color>
     <color name="brown_alpha">#CC1E0A0A</color>
 
-    <color name="error_workaround">?colorError</color>
+<!--    TODO wffs -->
+    <color name="error_workaround">#FFFF0000</color>
 </resources>

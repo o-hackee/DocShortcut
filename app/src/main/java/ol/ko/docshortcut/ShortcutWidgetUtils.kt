@@ -19,7 +19,7 @@ object ShortcutWidgetUtils {
         fileUriString: String?,
         isValid: Boolean = true
     ) {
-        val fileName = fileUriString?.getFilename(context) ?: context.getString(R.string.data_not_found)
+        val fileName = fileUriString?.getFilenameFromUri(context) ?: context.getString(R.string.data_not_found)
         // Construct the RemoteViews object
         val views = RemoteViews(context.packageName, R.layout.shortcut_app_widget).apply {
             with (R.id.file_uri) {
@@ -60,14 +60,27 @@ object ShortcutWidgetUtils {
         }
     }
 
-    private fun String.getFilename(context: Context): String {
-        Uri.parse(this)?.let { returnUri ->
-            context.contentResolver.query(returnUri, null, null, null, null)
+    private fun String.getFilenameFromUri(context: Context): String {
+        Uri.parse(this)?.let { uri ->
+            context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
         }?.use { cursor ->
-            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            cursor.moveToFirst()
-            return cursor.getString(nameIndex)
+            if (cursor.count > 0) {
+                cursor.moveToFirst()
+                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME) // should be zero, but JIC
+                return cursor.getString(nameIndex)
+            }
         }
         return context.getString(R.string.unknown_document)
+    }
+
+    fun String?.uriFileExists(context: Context): Boolean {
+        if (isNullOrEmpty())
+            return false
+        Uri.parse(this)?.let { uri ->
+            context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+        }?.use { cursor ->
+            return cursor.count > 0
+        }
+        return false
     }
 }

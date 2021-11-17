@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import ol.ko.docshortcut.ShortcutWidgetUtils.uriFileExists
 
 /**
  * Implementation of App Widget functionality.
@@ -20,7 +21,8 @@ class ShortcutAppWidget : AppWidgetProvider() {
             val fileUriString = FileUrisSettings(context).loadUriPref(appWidgetId)
             CoroutineScope(Dispatchers.Main).launch {
                 fileUriString.collect {
-                    ShortcutWidgetUtils.updateAppWidget(context, appWidgetManager, appWidgetId, it)
+//                    TODO don't execute uriFileExists() in this scope?
+                    ShortcutWidgetUtils.updateAppWidget(context, appWidgetManager, appWidgetId, it, it.uriFileExists(context))
                 }
             }
         }
