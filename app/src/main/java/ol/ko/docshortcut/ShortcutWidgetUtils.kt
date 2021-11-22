@@ -7,10 +7,13 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.util.Log
 import android.widget.RemoteViews
 import androidx.core.content.ContextCompat
 
 object ShortcutWidgetUtils {
+
+    private const val TAG = "OLKO"
 
     internal fun updateAppWidget(
         context: Context,
@@ -61,14 +64,26 @@ object ShortcutWidgetUtils {
     }
 
     private fun String.getFilenameFromUri(context: Context): String {
-        Uri.parse(this)?.let { uri ->
-            context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-        }?.use { cursor ->
-            if (cursor.count > 0) {
-                cursor.moveToFirst()
-                val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME) // should be zero, but JIC
-                return cursor.getString(nameIndex)
+        try {
+            Uri.parse(this)?.let { uri ->
+                context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            }?.use { cursor ->
+                if (cursor.count > 0) {
+                    cursor.moveToFirst()
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME) // should be zero, but JIC
+                    return cursor.getString(nameIndex)
+                }
             }
+        } catch (ex: SecurityException) {
+            // maybe missing permissions after renaming back and forth the full external storage path
+            Log.e(TAG, "get filename failed with security exception", ex)
+            val looksLikeFileNameIndex = lastIndexOf("%2F")
+            if (looksLikeFileNameIndex != -1) {
+                return substring(looksLikeFileNameIndex + 3)
+            }
+        } catch (ex: Exception) {
+            // if the file can't be found by uri, the cursor will be just empty, but catch the exception anyway
+            Log.e(TAG, "get filename failed", ex)
         }
         return context.getString(R.string.unknown_document)
     }
@@ -76,10 +91,15 @@ object ShortcutWidgetUtils {
     fun String?.uriFileExists(context: Context): Boolean {
         if (isNullOrEmpty())
             return false
-        Uri.parse(this)?.let { uri ->
-            context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
-        }?.use { cursor ->
-            return cursor.count > 0
+        try {
+            Uri.parse(this)?.let { uri ->
+                context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            }?.use { cursor ->
+                return cursor.count > 0
+            }
+        } catch (ex: Exception) {
+            // can't do much in case of missing permissions after renaming back and forth the full external storage path, just one common catch
+            Log.e(TAG, "file check failed", ex)
         }
         return false
     }

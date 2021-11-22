@@ -54,8 +54,6 @@ class FileCheckWorker(appContext: Context, workerParams: WorkerParameters) :
                     val isValid = fileUriString?.uriFileExists(applicationContext) ?: false
                     Log.d(TAG, "$appWidgetId: $isValid")
                     // TODO don't repeat yourself: either request update instead of direct call or directly but only if the validity changed
-                    // TODO rename fileX -> fileY -> fileX wouldn't be resolved as content uri are actually kind of links (recheck on real phone)
-                    // TODO on the real device it actually works smoothly!!
                     ShortcutWidgetUtils.updateAppWidget(applicationContext, AppWidgetManager.getInstance(applicationContext), appWidgetId, fileUriString, isValid)
                 }
             }
