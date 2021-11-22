@@ -18,11 +18,19 @@ class ShortcutAppWidget : AppWidgetProvider() {
         // There may be multiple widgets active, so update all of them
         for (appWidgetId in appWidgetIds) {
 
-            val fileUriString = FileUrisSettings(context).loadUriPref(appWidgetId)
-            CoroutineScope(Dispatchers.Main).launch {
-                fileUriString.collect {
-//                    TODO don't execute uriFileExists() in this scope?
-                    ShortcutWidgetUtils.updateAppWidget(context, appWidgetManager, appWidgetId, it, it.uriFileExists(context))
+            val fileUrisSettings = FileUrisSettings(context)
+            val fileUriStringFlow = fileUrisSettings.loadUriPref(appWidgetId)
+            CoroutineScope(Dispatchers.IO).launch {
+                fileUriStringFlow.collect { savedUriString ->
+                    val isCurrentlyValid = savedUriString?.uriString.uriFileExists(context)
+                    CoroutineScope(Dispatchers.Main).launch {
+                        ShortcutWidgetUtils.updateAppWidget(context, appWidgetManager, appWidgetId, savedUriString?.uriString, isCurrentlyValid)
+                    }
+                    savedUriString?.let {
+                        if (isCurrentlyValid != it.lastIsValid) {
+                            fileUrisSettings.markUriPref(appWidgetId, isCurrentlyValid)
+                        }
+                    }
                 }
             }
         }

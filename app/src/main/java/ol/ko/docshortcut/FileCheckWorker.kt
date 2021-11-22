@@ -47,14 +47,18 @@ class FileCheckWorker(appContext: Context, workerParams: WorkerParameters) :
     }
 
     override suspend fun doWork(): Result {
-        FileUrisSettings(applicationContext).allUriPrefs().collect { uris ->
-            uris.forEach {
-                it.first?.let { appWidgetId ->
-                    val fileUriString = it.second
-                    val isValid = fileUriString?.uriFileExists(applicationContext) ?: false
-                    Log.d(TAG, "$appWidgetId: $isValid")
-                    // TODO don't repeat yourself: either request update instead of direct call or directly but only if the validity changed
-                    ShortcutWidgetUtils.updateAppWidget(applicationContext, AppWidgetManager.getInstance(applicationContext), appWidgetId, fileUriString, isValid)
+        val fileUrisSettings = FileUrisSettings(applicationContext)
+        fileUrisSettings.allUriPrefs().collect { uris ->
+            uris.forEach { pair ->
+                pair.first?.let { appWidgetId ->
+                    val savedUriString = pair.second
+                    savedUriString?.let {
+                        val isCurrentlyValid = savedUriString.uriString.uriFileExists(applicationContext)
+                        Log.d(TAG, "$appWidgetId: $isCurrentlyValid")
+                        if (isCurrentlyValid != it.lastIsValid) {
+                            ShortcutWidgetUtils.updateAppWidget(applicationContext, AppWidgetManager.getInstance(applicationContext), appWidgetId, savedUriString.uriString, isCurrentlyValid)
+                        }
+                    }
                 }
             }
         }

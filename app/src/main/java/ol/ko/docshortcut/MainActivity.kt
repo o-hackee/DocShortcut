@@ -1,5 +1,6 @@
 package ol.ko.docshortcut
 
+import android.appwidget.AppWidgetManager
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
@@ -18,6 +19,7 @@ class MainActivity : AppCompatActivity() {
         const val PROXY_REQUEST = 1
         const val EXTRA_PROXY_REQUEST_KEY = "PROXY_REQUEST"
         const val EXTRA_URI_KEY = "URI"
+        const val EXTRA_APP_WIDGET_ID = "ID"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -31,8 +33,9 @@ class MainActivity : AppCompatActivity() {
 
         if (intent?.getBooleanExtra(EXTRA_PROXY_REQUEST_KEY, false) == true) {
             val fileUriString = intent?.getStringExtra(EXTRA_URI_KEY)
-            fileUriString?.let {
-                viewDocument(it)
+            val appWidgetId = intent?.getIntExtra(EXTRA_APP_WIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+            if (fileUriString != null && appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+                viewDocument(fileUriString, appWidgetId)
                 close()
             }
         }
@@ -54,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         finish()
     }
 
-    private fun viewDocument(fileUriString: String) {
+    private fun viewDocument(fileUriString: String, appWidgetId: Int) {
         val uri = Uri.parse(fileUriString)
         val mime = contentResolver.getType(uri)
         // ACTION_VIEW is actually very common, e.g. opening a renamed file might end up as trying to open a contact
@@ -72,10 +75,11 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Document $fileUriString not found", Toast.LENGTH_LONG).show()
         } catch (ex: SecurityException) {
             Log.e(TAG, "$fileUriString: security exception", ex)
-            Toast.makeText(this, "permissions have to be re-granted, please recreate the widget for $fileUriString", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "permissions probably have to be re-granted, please recreate the widget for $fileUriString", Toast.LENGTH_LONG).show()
         } catch (ex: Exception) {
             Log.e(TAG, "$fileUriString: another exception", ex)
             Toast.makeText(this, "An error occurred while trying to open $fileUriString", Toast.LENGTH_LONG).show()
         }
+        ShortcutWidgetUtils.requestWidgetsUpdate(this, appWidgetId)
     }
 }

@@ -38,7 +38,8 @@ object ShortcutWidgetUtils {
                         MainActivity.PROXY_REQUEST + appWidgetId,
                         Intent(context, MainActivity::class.java)
                             .putExtra(MainActivity.EXTRA_PROXY_REQUEST_KEY, true)
-                            .putExtra(MainActivity.EXTRA_URI_KEY, it),
+                            .putExtra(MainActivity.EXTRA_URI_KEY, it)
+                            .putExtra(MainActivity.EXTRA_APP_WIDGET_ID, appWidgetId),
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
                 )
@@ -49,9 +50,12 @@ object ShortcutWidgetUtils {
         appWidgetManager.updateAppWidget(appWidgetId, views)
     }
 
-    internal fun requestWidgetsUpdate(context: Context) {
+    internal fun requestWidgetsUpdate(context: Context, appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID) {
         val appWidgetManager = AppWidgetManager.getInstance(context)
-        val appWidgetIds = appWidgetManager.getAppWidgetIds(ComponentName(context, ShortcutAppWidget::class.java))
+        val appWidgetIds = if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID)
+            appWidgetManager.getAppWidgetIds(ComponentName(context, ShortcutAppWidget::class.java))
+        else
+            arrayOf(appWidgetId).toIntArray()
         if (appWidgetIds.isNotEmpty()) {
             context.sendBroadcast(
                 Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE).putExtra(
