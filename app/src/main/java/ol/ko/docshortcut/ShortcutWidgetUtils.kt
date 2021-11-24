@@ -6,10 +6,12 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.provider.OpenableColumns
 import android.util.Log
 import android.widget.RemoteViews
 import androidx.core.content.ContextCompat
+import android.util.TypedValue
 
 object ShortcutWidgetUtils {
 
@@ -27,8 +29,19 @@ object ShortcutWidgetUtils {
         val views = RemoteViews(context.packageName, R.layout.shortcut_app_widget).apply {
             with (R.id.file_uri) {
                 setTextViewText(this, fileName)
-                // couldn't obtain the colors from the theme
-                val color = ContextCompat.getColor(context, if (isValid) R.color.on_primary else R.color.error_workaround)
+
+                val color = if (isValid) {
+                    // couldn't obtain the color from the theme
+                    ContextCompat.getColor(context, R.color.on_primary)
+                } else {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        val typedValue = TypedValue()
+                        context.theme.resolveAttribute(android.R.attr.colorError, typedValue, true)
+                        typedValue.data
+                    } else {
+                        ContextCompat.getColor(context, R.color.error)
+                    }
+                }
                 setTextColor(this, color)
             }
             fileUriString?.let {
