@@ -2,6 +2,7 @@ package ol.ko.docshortcut
 
 import android.appwidget.AppWidgetManager
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
@@ -20,13 +21,19 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_PROXY_REQUEST_KEY = "PROXY_REQUEST"
         const val EXTRA_URI_KEY = "URI"
         const val EXTRA_APP_WIDGET_ID = "ID"
+
+        fun createProxyIntent(context: Context, fileUriString: String, appWidgetId: Int ) =
+            Intent(context, MainActivity::class.java)
+            .putExtra(EXTRA_PROXY_REQUEST_KEY, true)
+            .putExtra(EXTRA_URI_KEY, fileUriString)
+            .putExtra(EXTRA_APP_WIDGET_ID, appWidgetId)
     }
 
     private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d(TAG, "onCreate ${intent.action} ${intent.extras?.keySet()?.joinToString() { "$it: ${intent.extras?.get(it)}" }}")
+        Log.d(TAG, "onCreate ${intent.action} ${intent.extras?.keySet()?.joinToString { "$it: ${intent.extras?.get(it)}" }}")
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)

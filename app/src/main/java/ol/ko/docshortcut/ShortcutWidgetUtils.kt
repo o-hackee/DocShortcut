@@ -49,10 +49,7 @@ object ShortcutWidgetUtils {
                     R.id.container, PendingIntent.getActivity(
                         context,
                         MainActivity.PROXY_REQUEST + appWidgetId,
-                        Intent(context, MainActivity::class.java)
-                            .putExtra(MainActivity.EXTRA_PROXY_REQUEST_KEY, true)
-                            .putExtra(MainActivity.EXTRA_URI_KEY, it)
-                            .putExtra(MainActivity.EXTRA_APP_WIDGET_ID, appWidgetId),
+                        MainActivity.createProxyIntent(context, it, appWidgetId),
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
                 )
