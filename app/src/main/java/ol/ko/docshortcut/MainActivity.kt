@@ -63,7 +63,7 @@ class MainActivity : AppCompatActivity() {
         // ACTION_VIEW is actually very common, e.g. opening a renamed file might end up as trying to open a contact
         val intent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, mime)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_DOCUMENT)
         }
         try {
             startActivity(intent)
