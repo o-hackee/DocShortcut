@@ -20,13 +20,12 @@ class MainActivity : AppCompatActivity() {
         const val PROXY_REQUEST = 1
         const val EXTRA_PROXY_REQUEST_KEY = "PROXY_REQUEST"
         const val EXTRA_URI_KEY = "URI"
-        const val EXTRA_APP_WIDGET_ID = "ID"
 
         fun createProxyIntent(context: Context, fileUriString: String, appWidgetId: Int ) =
             Intent(context, MainActivity::class.java)
             .putExtra(EXTRA_PROXY_REQUEST_KEY, true)
             .putExtra(EXTRA_URI_KEY, fileUriString)
-            .putExtra(EXTRA_APP_WIDGET_ID, appWidgetId)
+            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -40,7 +39,7 @@ class MainActivity : AppCompatActivity() {
 
         if (intent?.getBooleanExtra(EXTRA_PROXY_REQUEST_KEY, false) == true) {
             val fileUriString = intent?.getStringExtra(EXTRA_URI_KEY)
-            val appWidgetId = intent?.getIntExtra(EXTRA_APP_WIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID) ?: AppWidgetManager.INVALID_APPWIDGET_ID
+            val appWidgetId = intent?.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID) ?: AppWidgetManager.INVALID_APPWIDGET_ID
             if (fileUriString != null && appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
                 viewDocument(fileUriString, appWidgetId)
                 close()
