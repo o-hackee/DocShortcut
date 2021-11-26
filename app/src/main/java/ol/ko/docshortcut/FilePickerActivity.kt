@@ -75,5 +75,4 @@ class FilePickerActivity : AppCompatActivity() {
         setResult(RESULT_OK, resultValue)
         finish()
     }
-
 }
