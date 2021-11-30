@@ -2,6 +2,7 @@ package ol.ko.docshortcut
 
 import android.appwidget.AppWidgetManager
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -55,7 +56,7 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "onStart ${intent.action} ${intent.extras}")
 
         // the problem is steadily observed on API 29 emulator and sporadically - on real device
-        ShortcutWidgetUtils.requestWidgetsUpdate(this)
+        requestWidgetsUpdate(this)
     }
 
     private fun close() {
@@ -86,6 +87,23 @@ class MainActivity : AppCompatActivity() {
             Log.e(TAG, "$fileUriString: another exception", ex)
             Toast.makeText(this, "An error occurred while trying to open $fileUriString", Toast.LENGTH_LONG).show()
         }
-        ShortcutWidgetUtils.requestWidgetsUpdate(this, appWidgetId)
+        requestWidgetsUpdate(this, appWidgetId)
+    }
+
+    private fun requestWidgetsUpdate(context: Context, appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID) {
+        val appWidgetManager = AppWidgetManager.getInstance(context)
+        val appWidgetIds = if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID)
+            appWidgetManager.getAppWidgetIds(ComponentName(context, ShortcutAppWidget::class.java))
+        else
+            arrayOf(appWidgetId).toIntArray()
+        if (appWidgetIds.isNotEmpty()) {
+            context.sendBroadcast(
+                Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE).putExtra(
+                    AppWidgetManager.EXTRA_APPWIDGET_IDS,
+                    appWidgetIds
+                )
+            )
+//            Toast.makeText(context, R.string.updating, Toast.LENGTH_SHORT).show()
+        }
     }
 }

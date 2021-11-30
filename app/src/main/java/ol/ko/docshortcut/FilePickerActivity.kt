@@ -63,12 +63,12 @@ class FilePickerActivity : AppCompatActivity() {
         contentResolver.takePersistableUriPermission(fileUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         val fileUriString = fileUri.toString()
         lifecycleScope.launch {
-            FileUrisSettings(this@FilePickerActivity).saveUriPref(appWidgetId, fileUriString)
+            FileUrisRepository(FileUrisDataStore.getInstance(this@FilePickerActivity)).saveUriPref(appWidgetId, fileUriString)
         }
 
         // It is the responsibility of the configuration activity to update the app widget
         val appWidgetManager = AppWidgetManager.getInstance(this)
-        ShortcutWidgetUtils.updateAppWidget(this, appWidgetManager, appWidgetId, fileUriString)
+        ShortcutAppWidget.updateAppWidget(this, appWidgetManager, appWidgetId, fileUriString)
 
         // Make sure we pass back the original appWidgetId
         val resultValue = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)

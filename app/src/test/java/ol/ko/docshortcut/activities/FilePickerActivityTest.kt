@@ -22,18 +22,25 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.Runs
+import io.mockk.unmockkStatic
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import ol.ko.docshortcut.DataStoreBaseTest
 import ol.ko.docshortcut.FilePickerActivity
 import ol.ko.docshortcut.R
 import org.hamcrest.core.AllOf.allOf
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@ExperimentalCoroutinesApi
 @RunWith(AndroidJUnit4::class)
-class FilePickerActivityTest {
+class FilePickerActivityTest: DataStoreBaseTest() {
     companion object {
         const val APPWIDGET_ID = 42
     }
@@ -85,6 +92,9 @@ class FilePickerActivityTest {
             assertEquals(fileUri, uri)
             assert(isReadPermission)
         }
+
+        verifyFileUriSaved(APPWIDGET_ID, fileUri.toString())
+
         with(scenario.result) {
             assertEquals(Activity.RESULT_OK, resultCode)
             assertEquals(
@@ -92,6 +102,8 @@ class FilePickerActivityTest {
                 resultData.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
             )
         }
+
+        unmockkStatic(AppWidgetManager::class)
     }
 
     @Test
@@ -119,4 +131,13 @@ class FilePickerActivityTest {
         ).also {
             assertEquals(Lifecycle.State.RESUMED, it.state)
         }
+
+    private fun verifyFileUriSaved(appWidgetId: Int, fileUriString: String) = runBlocking {
+        val preferencesMap = testDataStore.data.first().asMap()
+        val key = preferencesMap.keys.find { it.name.contains(appWidgetId.toString()) }
+        assertNotNull(key)
+        val value = preferencesMap[key]
+        assertNotNull(value)
+        assert(value.toString().contains(fileUriString))
+    }
 }

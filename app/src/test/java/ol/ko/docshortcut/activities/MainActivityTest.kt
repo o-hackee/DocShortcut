@@ -10,13 +10,18 @@ import androidx.test.core.app.launchActivity
 import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import ol.ko.docshortcut.MainActivity
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.core.AllOf.allOf
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows
@@ -26,6 +31,20 @@ class MainActivityTest {
     companion object {
         const val APPWIDGET_ID = 42
     }
+
+    private lateinit var appWidgetManagerMock : AppWidgetManager
+
+    @Before
+    fun setUp() {
+         appWidgetManagerMock = mockk {
+            every { updateAppWidget(more(APPWIDGET_ID, andEquals = true), any()) } just Runs
+        }
+        mockkStatic(AppWidgetManager::class)
+        every { AppWidgetManager.getInstance(any()) } returns appWidgetManagerMock
+    }
+
+    @After
+    fun tearDown() = unmockkStatic(AppWidgetManager::class)
 
     @Test
     fun testViewIntent() {
@@ -60,11 +79,7 @@ class MainActivityTest {
     @Test
     fun testRefreshIntent() {
         val appWidgetIds = IntArray(3) { i -> APPWIDGET_ID + i }
-
-        mockkStatic(AppWidgetManager::class)
-        every { AppWidgetManager.getInstance(any()) } returns mockk(relaxed = true) {
-            every { getAppWidgetIds(any()) } returns appWidgetIds
-        }
+        every { appWidgetManagerMock.getAppWidgetIds(any()) } returns appWidgetIds
 
         val scenario = launchActivity<MainActivity>()
         assertEquals(Lifecycle.State.RESUMED, scenario.state)

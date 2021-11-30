@@ -9,8 +9,6 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.flow.collect
-import ol.ko.docshortcut.ShortcutWidgetUtils.uriFileExists
 import java.util.concurrent.TimeUnit
 
 class FileCheckWorker(appContext: Context, workerParams: WorkerParameters) :
@@ -47,21 +45,23 @@ class FileCheckWorker(appContext: Context, workerParams: WorkerParameters) :
     }
 
     override suspend fun doWork(): Result {
-        val fileUrisSettings = FileUrisSettings(applicationContext)
-        fileUrisSettings.allUriPrefs().collect { uris ->
-            uris.forEach { pair ->
-                pair.first?.let { appWidgetId ->
-                    val savedUriString = pair.second
-                    savedUriString?.let {
-                        val isCurrentlyValid = savedUriString.uriString.uriFileExists(applicationContext)
-                        Log.d(TAG, "$appWidgetId: $isCurrentlyValid")
-                        if (isCurrentlyValid != it.lastIsValid) {
-                            ShortcutWidgetUtils.updateAppWidget(applicationContext, AppWidgetManager.getInstance(applicationContext), appWidgetId, savedUriString.uriString, isCurrentlyValid)
-                        }
+        val fileUrisRepository = FileUrisRepository(FileUrisDataStore.getInstance(applicationContext))
+        val uris = fileUrisRepository.allUriPrefs()
+//        println("uris: $uris")
+        uris.forEach { pair ->
+            pair.first?.let { appWidgetId ->
+                val savedUriString = pair.second
+                savedUriString?.let {
+                    val isCurrentlyValid = ContentResolverUtils.uriFileExists(applicationContext.contentResolver, savedUriString.uriString)
+                    Log.d(TAG, "$appWidgetId: $isCurrentlyValid")
+//                    println("$appWidgetId: $isCurrentlyValid")
+                    if (isCurrentlyValid != it.lastIsValid) {
+                        ShortcutAppWidget.updateAppWidget(applicationContext, AppWidgetManager.getInstance(applicationContext), appWidgetId, savedUriString.uriString, isCurrentlyValid)
                     }
                 }
             }
         }
+//        println("return doWork")
         return Result.success()
     }
 }
