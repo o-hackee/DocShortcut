@@ -23,7 +23,7 @@ class FileCheckWorkerTest: DataStoreBaseTest() {
     companion object {
         const val APPWIDGET_ID = 42
         const val fileUriStringBase = "content://com.android.providers.downloads.documents/document/msf%3A13123"
-        const val FILE_COUNT = 1 // TODO
+        const val FILE_COUNT = 2
     }
 
     @Before
