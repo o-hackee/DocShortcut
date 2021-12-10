@@ -5,9 +5,11 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.work.ListenableWorker.Result
 import androidx.work.testing.TestListenableWorkerBuilder
+import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -26,6 +28,8 @@ class FileCheckWorkerTest: DataStoreBaseTest() {
         const val FILE_COUNT = 2
     }
 
+    private fun buildContentUri(idx: Int) = "$fileUriStringBase$idx"
+
     @Before
     fun setUp() {
         mockkObject(ContentResolverUtils)
@@ -33,19 +37,27 @@ class FileCheckWorkerTest: DataStoreBaseTest() {
     }
 
     @After
-    fun tearDown() = unmockkObject(ContentResolverUtils)
+    fun tearDown() {
+        confirmVerified(ContentResolverUtils)
+        unmockkObject(ContentResolverUtils)
+    }
 
     @Test
     fun testWorker() = runBlocking {
         val appWidgetIds = IntArray(FILE_COUNT) { i -> APPWIDGET_ID + i }
         val fileUrisRepository = FileUrisRepository(testDataStore)
         for (i in 0 until FILE_COUNT) {
-            fileUrisRepository.saveUriPref(appWidgetIds[i], "$fileUriStringBase$i")
+            fileUrisRepository.saveUriPref(appWidgetIds[i], buildContentUri(i))
         }
 
         val context = ApplicationProvider.getApplicationContext<Context>()
         val worker = TestListenableWorkerBuilder<FileCheckWorker>(context).build()
         val result = worker.doWork()
         assertEquals(Result.success(), result)
+
+
+        for (i in 0 until FILE_COUNT) {
+            verify { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(i))) }
+        }
     }
 }
