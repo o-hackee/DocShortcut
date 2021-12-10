@@ -1,2 +1,2 @@
 :: this script won't win a prize, but it does its job
-wsl -- bash -c "source /etc/profile.d/gradle.sh && source /etc/profile.d/android_sdk_root.sh && cd /mnt/c/coding/AndroidStudioProjects/DocShortcut && gradle :app:cleanTestDebugUnitTest :app:testDebugUnitTest --tests ol.ko.docshortcut.FileCheckWorkerTest && echo Done"
+wsl -- bash -c "source /etc/profile.d/gradle.sh && source /etc/profile.d/android_sdk_root.sh && cd /mnt/c/coding/AndroidStudioProjects/DocShortcut && gradle :app:cleanTestDebugUnitTest :app:testDebugUnitTest --tests ol.ko.docshortcut.%1 && echo Done"
