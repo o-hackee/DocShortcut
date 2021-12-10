@@ -19,42 +19,75 @@ class FileUrisRepositoryTest: DataStoreBaseTest() {
         const val fileUriStringBase = "content://com.android.providers.downloads.documents/document/msf%3A13123"
         const val FILE_COUNT = 3
     }
+    private lateinit var appWidgetsInitialIds: List<Int>
     private lateinit var fileUrisRepository: FileUrisRepository
 
-    private fun buildContentUri(idx: Int) = "$fileUriStringBase$idx"
+    private fun buildContentUri(appWidgetIdx: Int) = "$fileUriStringBase${appWidgetIdx - APPWIDGET_ID}"
 
     @Before
     fun setUp() {
-        val appWidgetIds = IntArray(FILE_COUNT) { i -> APPWIDGET_ID + i }
+        appWidgetsInitialIds = List(FILE_COUNT) { APPWIDGET_ID + it }
         fileUrisRepository = FileUrisRepository(testDataStore)
         runBlocking {
-            for (i in 0 until FILE_COUNT) {
-                fileUrisRepository.saveUriPref(appWidgetIds[i], buildContentUri(i))
+            appWidgetsInitialIds.forEach { appWidgetIdx ->
+                fileUrisRepository.saveUriPref(appWidgetIdx, buildContentUri(appWidgetIdx))
             }
         }
     }
 
     @Test
-    fun load() = runBlocking{
+    fun load() = runBlocking {
+        checkLoad(appWidgetsInitialIds)
+    }
+
+    @Test
+    fun save() = runBlocking {
+        val appWidgetIdx = appWidgetsInitialIds.last() + 1
+        fileUrisRepository.saveUriPref(appWidgetIdx, buildContentUri(appWidgetIdx))
+        checkLoad(appWidgetsInitialIds + appWidgetIdx)
+    }
+
+    @Test
+    fun mark() = runBlocking {
+        // mark nonexistent widget record
+        fileUrisRepository.markUriPref(appWidgetsInitialIds.last() + 1, false)
+        checkLoad(appWidgetsInitialIds)
+
+        // mark as invalid
+        fileUrisRepository.markUriPref(appWidgetsInitialIds[1], false)
+        checkLoad(appWidgetsInitialIds, appWidgetsInitialIds.map { true }.toMutableList().also { validity -> validity[1] = false })
+    }
+
+    @Test
+    fun delete() = runBlocking {
+        // delete nonexistent widget record
+        fileUrisRepository.deleteUriPref(appWidgetsInitialIds.last() + 1)
+        checkLoad(appWidgetsInitialIds)
+
+        // delete record
+        val appWidgetIdx = appWidgetsInitialIds[1]
+        fileUrisRepository.deleteUriPref(appWidgetIdx)
+        checkLoad(appWidgetsInitialIds - appWidgetIdx)
+
+        // delete all
+        appWidgetsInitialIds.forEach {
+            fileUrisRepository.deleteUriPref(it)
+        }
+        checkLoad(listOf())
+    }
+
+    private suspend fun checkLoad(indices: List<Int>, validity: List<Boolean> = indices.map { true }) {
         val allPrefs = fileUrisRepository.allUriPrefs()
-        assertEquals(FILE_COUNT, allPrefs.size)
+        assertEquals(indices.size, allPrefs.size)
 
-        for (i in 0 until FILE_COUNT) {
-            val fromAll = allPrefs.find { it.first == APPWIDGET_ID + i }?.second
-            with (fromAll) {
+        indices.forEachIndexed { i, appWidgetIdx ->
+            val fromAll = allPrefs.find { it.first == appWidgetIdx }?.second
+            with(fromAll) {
                 assertNotNull(this)
-                assertEquals(buildContentUri(i), this!!.uriString)
-                assert(lastIsValid)
+                assertEquals(buildContentUri(appWidgetIdx), this!!.uriString)
+                assertEquals(validity[i], lastIsValid)
             }
-            assertEquals(fromAll, fileUrisRepository.loadUriPref(APPWIDGET_ID + i).first())
+            assertEquals(fromAll, fileUrisRepository.loadUriPref(appWidgetIdx).first())
         }
-    }
-
-    @Test
-    fun mark() {
-    }
-
-    @Test
-    fun delete() {
     }
 }

@@ -30,19 +30,18 @@ class FileCheckWorkerTest: DataStoreBaseTest() {
     companion object {
         const val APPWIDGET_ID = 42
         const val fileUriStringBase = "content://com.android.providers.downloads.documents/document/msf%3A13123"
-        const val FILE_COUNT = 2
+        const val WIDGET_COUNT = 2
     }
     private lateinit var appWidgetManagerMock : AppWidgetManager
 
-    private fun buildContentUri(idx: Int) = "$fileUriStringBase$idx"
+    private fun buildContentUri(appWidgetIdx: Int) = "$fileUriStringBase${appWidgetIdx - APPWIDGET_ID}"
 
     @Before
     fun setUp() {
-        val appWidgetIds = IntArray(FILE_COUNT) { i -> APPWIDGET_ID + i }
         val fileUrisRepository = FileUrisRepository(testDataStore)
         runBlocking {
-            for (i in 0 until FILE_COUNT) {
-                fileUrisRepository.saveUriPref(appWidgetIds[i], buildContentUri(i))
+            for (i in 0 until WIDGET_COUNT) {
+                fileUrisRepository.saveUriPref(APPWIDGET_ID + i, buildContentUri(APPWIDGET_ID + i))
             }
         }
 
@@ -71,8 +70,8 @@ class FileCheckWorkerTest: DataStoreBaseTest() {
 
     @Test
     fun becomesInvalid() {
-        every { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(0))) } returns true
-        every { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(1))) } returns false
+        every { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(APPWIDGET_ID))) } returns true
+        every { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(APPWIDGET_ID + 1))) } returns false
 
         assertEquals(Result.success(), doWork())
 
@@ -84,7 +83,7 @@ class FileCheckWorkerTest: DataStoreBaseTest() {
     fun becomesValid() {
         becomesInvalid()
 
-        every { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(1))) } returns true
+        every { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(APPWIDGET_ID + 1))) } returns true
 
         assertEquals(Result.success(), doWork())
 
@@ -95,8 +94,8 @@ class FileCheckWorkerTest: DataStoreBaseTest() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val worker = TestListenableWorkerBuilder<FileCheckWorker>(context).build()
         val result = worker.doWork()
-        for (i in 0 until FILE_COUNT) {
-            verify { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(i))) }
+        for (i in 0 until WIDGET_COUNT) {
+            verify { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(APPWIDGET_ID + i))) }
         }
         return@runBlocking result
     }
