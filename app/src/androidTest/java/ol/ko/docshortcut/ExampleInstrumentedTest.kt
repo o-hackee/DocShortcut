@@ -4,10 +4,14 @@ import android.graphics.Point
 import android.os.Environment
 import android.os.SystemClock
 import android.widget.Button
+import android.widget.ImageButton
+import android.widget.TextView
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.UiCollection
 import androidx.test.uiautomator.UiDevice
+import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
 import org.junit.After
 import org.junit.Test
@@ -24,21 +28,22 @@ class ExampleInstrumentedTest {
     companion object {
         const val ACTION_TIMEOUT: Long = 5000
         const val WIDGET_NAME: String = "Doc Shortcut"
+        const val testDataFolderName = "testdata"
     }
 
     private val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
     private val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
     private lateinit var testsDataFolder: File
+    private lateinit var fileNames: Array<String>
 
     @Before
     fun copyFiles() {
-        val testDataFolderName = "testdata"
         val testContext = InstrumentationRegistry.getInstrumentation().context
-        val files = testContext.resources.assets.list(testDataFolderName)
+        fileNames = testContext.resources.assets.list(testDataFolderName) ?: arrayOf()
         testsDataFolder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), testDataFolderName)
         assert(testsDataFolder.mkdir())
 
-        files?.forEach {
+        fileNames.forEach {
             val dest = File(testsDataFolder, it)
             assert(dest.createNewFile())
             testContext.assets.open(testDataFolderName + File.separator + it).use { src ->
@@ -94,6 +99,24 @@ class ExampleInstrumentedTest {
         assertNotNull(button)
         button.click()
 
-        // next: how do i select a document
+        // open downloads
+        val rootsButton = device.wait(Until.findObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT)
+        assertNotNull(rootsButton)
+        rootsButton.click()
+        clickLabel("Downloads")
+        clickLabel(testDataFolderName)
+        clickLabel(fileNames.first())
+
+        val addedWidget = device.wait(Until.findObject(By.descContains(WIDGET_NAME)), ACTION_TIMEOUT)
+        assertNotNull(addedWidget)
+        val addedWidgetCollection = UiCollection(UiSelector().description(WIDGET_NAME))
+        val widgetFileNameLabel = addedWidgetCollection.getChildByText(UiSelector().className(TextView::class.java), fileNames.first())
+        assertNotNull(widgetFileNameLabel)
+    }
+
+    private fun clickLabel(text: String) {
+        val label = device.wait(Until.findObject(By.text(text).clazz(TextView::class.java)), ACTION_TIMEOUT)
+        assertNotNull(label)
+        label.click()
     }
 }
