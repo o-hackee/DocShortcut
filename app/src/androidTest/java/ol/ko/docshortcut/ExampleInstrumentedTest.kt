@@ -9,6 +9,7 @@ import android.widget.TextView
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
+import androidx.test.uiautomator.BySelector
 import androidx.test.uiautomator.UiCollection
 import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
@@ -103,9 +104,9 @@ class ExampleInstrumentedTest {
         val rootsButton = device.wait(Until.findObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT)
         assertNotNull(rootsButton)
         rootsButton.click()
-        clickLabel("Downloads")
-        clickLabel(testDataFolderName)
-        clickLabel(fileNames.first())
+        clickLabel(By.text("Downloads").res("android", "title"))
+        clickLabel(By.text(testDataFolderName))
+        clickLabel(By.text(fileNames.first()))
 
         val addedWidget = device.wait(Until.findObject(By.descContains(WIDGET_NAME)), ACTION_TIMEOUT)
         assertNotNull(addedWidget)
@@ -114,8 +115,8 @@ class ExampleInstrumentedTest {
         assertNotNull(widgetFileNameLabel)
     }
 
-    private fun clickLabel(text: String) {
-        val label = device.wait(Until.findObject(By.text(text).clazz(TextView::class.java)), ACTION_TIMEOUT)
+    private fun clickLabel(bySelector: BySelector) {
+        val label = device.wait(Until.findObject(bySelector.clazz(TextView::class.java)), ACTION_TIMEOUT)
         assertNotNull(label)
         label.click()
     }
