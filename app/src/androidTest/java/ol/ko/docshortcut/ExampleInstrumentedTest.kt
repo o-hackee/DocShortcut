@@ -5,6 +5,7 @@ import android.os.Environment
 import android.os.SystemClock
 import android.widget.Button
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -71,16 +72,27 @@ class ExampleInstrumentedTest {
         val widgetViews = fileNames.indices.map { addWidget(it) }
 
         val viewerApps = listOf("com.google.android.apps.docs", "com.adobe.reader")
-        widgetViews.forEach { widgetView ->
+        widgetViews.forEachIndexed { widgetIdx, widgetView ->
             goHome()
             widgetView.click()
-            var openedInViewerApp = false
-            for (viewAppPackage in viewerApps) {
-                openedInViewerApp = device.wait(Until.hasObject(By.pkg(viewAppPackage)), ACTION_TIMEOUT)
-                if (openedInViewerApp)
+            var viewerApp = ""
+            for (app in viewerApps) {
+                if (device.wait(Until.hasObject(By.pkg(app)), ACTION_TIMEOUT)) {
+                    viewerApp = app
                     break
+                }
             }
-            assert(openedInViewerApp)
+            assertNotEquals("", viewerApp)
+            when (viewerApp) {
+                viewerApps[0] -> assert(device.hasObject(By.text(fileNames[widgetIdx])))
+                viewerApps[1] -> {
+                    val image = device.findObject(By.clazz(ImageView::class.java).desc("More options"))
+                    assertNotNull(image)
+                    image.click()
+                    val fileNameWithoutExtension = File(fileNames[widgetIdx]).nameWithoutExtension
+                    assert(device.wait(Until.hasObject(By.textContains(fileNameWithoutExtension)), ACTION_TIMEOUT))
+                }
+            }
         }
     }
 
