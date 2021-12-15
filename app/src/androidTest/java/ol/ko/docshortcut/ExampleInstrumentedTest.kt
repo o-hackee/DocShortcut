@@ -56,6 +56,8 @@ class ExampleInstrumentedTest {
 
     @After
     fun clear() {
+        removeAllWidgets()
+
         if (::testsDataFolder.isInitialized) {
             testsDataFolder.listFiles()?.forEach {
                 it.delete()
@@ -67,8 +69,18 @@ class ExampleInstrumentedTest {
     @Test
     fun addMultipleWidgets() {
         val widgetViews = fileNames.indices.map { addWidget(it) }
-        widgetViews.forEach {
-            it.click()
+
+        val viewerApps = listOf("com.google.android.apps.docs", "com.adobe.reader")
+        widgetViews.forEach { widgetView ->
+            goHome()
+            widgetView.click()
+            var openedInViewerApp = false
+            for (viewAppPackage in viewerApps) {
+                openedInViewerApp = device.wait(Until.hasObject(By.pkg(viewAppPackage)), ACTION_TIMEOUT)
+                if (openedInViewerApp)
+                    break
+            }
+            assert(openedInViewerApp)
         }
     }
 
@@ -151,5 +163,18 @@ class ExampleInstrumentedTest {
         val addedWidgets = device.wait(Until.findObjects(By.desc(widgetLabel)), ACTION_TIMEOUT)
         assertNotEquals(0, addedWidgets.size)
         return addedWidgets.find { it.hasObject(By.clazz(TextView::class.java).text(fileName)) }
+    }
+
+    private fun removeAllWidgets() {
+        goHome()
+
+        val addedWidgets = device.wait(Until.findObjects(By.desc(widgetLabel)), ACTION_TIMEOUT)
+        addedWidgets?.forEach {
+            val widgetTapPoint = Point(it.visibleBounds.centerX(), it.visibleBounds.centerY())
+            val trashPoint = Point(device.displayWidth / 2, device.displayHeight / 10)
+            val moveSteps = 100
+            device.swipe(arrayOf(widgetTapPoint, widgetTapPoint, trashPoint), moveSteps)
+            assert(device.wait(Until.hasObject(By.text("Item removed")), ACTION_TIMEOUT))
+        }
     }
 }
