@@ -25,7 +25,7 @@ import java.io.FileOutputStream
 import java.util.regex.Pattern
 
 @RunWith(AndroidJUnit4::class)
-class ExampleInstrumentedTest {
+class UiTest {
 
     companion object {
         const val ACTION_TIMEOUT: Long = 5000
