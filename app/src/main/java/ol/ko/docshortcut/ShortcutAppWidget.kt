@@ -51,6 +51,12 @@ class ShortcutAppWidget : AppWidgetProvider() {
                         }
                     }
                     setTextColor(this, color)
+
+                    if (isValid) {
+                        setContentDescription(this, context.getString(R.string.appwidget_text))
+                    } else {
+                        setContentDescription(this, context.getString(R.string.appwidget_invalid_text))
+                    }
                 }
                 fileUriString?.let {
                     setOnClickPendingIntent(
