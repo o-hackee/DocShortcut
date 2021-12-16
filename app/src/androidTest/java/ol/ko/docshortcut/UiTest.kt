@@ -1,5 +1,6 @@
 package ol.ko.docshortcut
 
+import android.content.Context
 import android.graphics.Point
 import android.os.Environment
 import android.os.SystemClock
@@ -24,18 +25,129 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.regex.Pattern
 
+
 @RunWith(AndroidJUnit4::class)
-class UiTest {
+open class UiTest {
+
+    protected val device: UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    protected val targetContext: Context = InstrumentationRegistry.getInstrumentation().targetContext
+
+    private val appName = targetContext.getString(R.string.app_name)
+    protected val widgetLabel: String = appName // default
+
+    @After
+    fun removeAllWidgets() {
+        goHome()
+
+        val addedWidgets = device.findObjects(By.desc(widgetLabel))
+        addedWidgets?.forEach {
+            val widgetTapPoint = Point(it.visibleBounds.centerX(), it.visibleBounds.centerY())
+            val trashPoint = Point(device.displayWidth / 2, device.displayHeight / 10)
+            val moveSteps = 100
+            device.swipe(arrayOf(widgetTapPoint, widgetTapPoint, trashPoint), moveSteps)
+            assert(device.wait(Until.hasObject(By.text("Item removed")), DocumentsUiTest.ACTION_TIMEOUT))
+        }
+    }
+
+    @Test
+    fun addingTerminated() {
+        startAddingWidget(upToFilePicker = false, pressHome = false)
+        startAddingWidget(upToFilePicker = false, pressHome = true)
+        startAddingWidget(upToFilePicker = true, pressHome = false)
+        startAddingWidget(upToFilePicker = true, pressHome = true)
+    }
+
+    private fun startAddingWidget(upToFilePicker: Boolean, pressHome: Boolean) {
+        goHome()
+        val widgetType = findWidgetInSelector()
+
+        // long press on it and move to the center
+        val widgetTapPoint = Point(widgetType.visibleBounds.centerX(), widgetType.visibleBounds.centerY())
+        val placementPoint = Point(device.displayWidth / 6, device.displayHeight / 6)
+        val moveSteps = 100
+        device.swipe(arrayOf(widgetTapPoint, widgetTapPoint, placementPoint), moveSteps)
+
+        // press the button on the configuration activity
+        val textPattern = Pattern.compile(targetContext.getString(R.string.select_document), Pattern.CASE_INSENSITIVE)
+        val button = device.wait(Until.findObject(By.text(textPattern).clazz(Button::class.java)),
+            DocumentsUiTest.ACTION_TIMEOUT
+        )
+        assertNotNull(button)
+
+        if (upToFilePicker) {
+            button.click()
+            assert(device.wait(Until.hasObject(By.desc("Show roots").clazz(ImageButton::class.java)),
+                DocumentsUiTest.ACTION_TIMEOUT
+            ))
+        }
+        if (pressHome)
+            goHome()
+        else
+            goBackUpToHome()
+
+        verifyNoWidgets(false)
+    }
+
+    protected fun goHome() {
+        device.pressHome()
+        assert(device.wait(Until.hasObject(By.pkg(device.launcherPackageName!!).depth(0)),
+            DocumentsUiTest.ACTION_TIMEOUT
+        ))
+    }
+
+    private fun goBackUpToHome() {
+        do {
+            device.pressBack()
+        } while (device.wait(Until.hasObject(By.pkg(device.launcherPackageName!!).depth(0)),
+                DocumentsUiTest.ACTION_TIMEOUT / 2
+            ) == false)
+    }
+
+    protected fun findWidgetInSelector(): UiObject2 {
+        // long press at the center
+        val screenCenter = Point(device.displayWidth / 2, device.displayHeight / 2)
+        val longPressSteps = 100
+        device.swipe(arrayOf(screenCenter, screenCenter), longPressSteps)
+
+        // open widgets selector
+        val contextMenuItem = device.wait(Until.findObject(By.text("Widgets")), DocumentsUiTest.ACTION_TIMEOUT)
+        assertNotNull(contextMenuItem)
+        contextMenuItem.click()
+        // don't like this, but need to wait on emulator till widgets list is ready
+        device.wait(Until.findObject(By.res("widgets_list_view")), DocumentsUiTest.ACTION_TIMEOUT)
+
+        // swipe to the target widget
+        var appSectionHeader = device.findObject(By.desc(appName))
+        val startTime = SystemClock.uptimeMillis()
+        val swipeSteps = 100
+        while (appSectionHeader == null && SystemClock.uptimeMillis() - startTime < 30000) {
+            device.swipe(screenCenter.x, device.displayHeight / 2, screenCenter.x, 0, swipeSteps)
+            appSectionHeader = device.findObject(By.desc(appName))
+        }
+        // scroll to get more of a widget on the screen
+        device.swipe(screenCenter.x, device.displayHeight / 2, screenCenter.x, 0, swipeSteps)
+
+        val widgetObjects = device.findObjects(By.text(widgetLabel)) // if the widget label is not specified explicitly, app section will be there too
+        val widgetType = widgetObjects.maxByOrNull { it.visibleCenter.y }
+        assertNotNull(widgetType)
+        return widgetType!!
+    }
+
+    private fun verifyNoWidgets(goHome: Boolean) {
+        if (goHome)
+            goHome()
+        assert(!device.hasObject(By.desc(widgetLabel)))
+    }
+}
+
+@RunWith(AndroidJUnit4::class)
+class DocumentsUiTest : UiTest() {
 
     companion object {
         const val ACTION_TIMEOUT: Long = 5000
         const val testDataFolderName = "testdata"
     }
 
-    private val device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-    private val targetContext = InstrumentationRegistry.getInstrumentation().targetContext
-    private val appName = targetContext.getString(R.string.app_name)
-    private val widgetLabel: String = appName // default
     private lateinit var testsDataFolder: File
     private lateinit var fileNames: Array<String>
 
@@ -57,8 +169,6 @@ class UiTest {
 
     @After
     fun clear() {
-        removeAllWidgets()
-
         if (::testsDataFolder.isInitialized) {
             testsDataFolder.listFiles()?.forEach {
                 it.delete()
@@ -96,6 +206,54 @@ class UiTest {
         }
     }
 
+    @Test
+    fun fullyQualifiedRenamed() {
+        // test initial display as well
+
+    }
+
+    @Test
+    fun providerLinkRenamed() {
+        // test initial display as well
+
+    }
+
+    @Test
+    fun fullyQualifiedRemoved() {
+        // test initial display as well
+
+    }
+
+    @Test
+    fun providerLinkRemoved() {
+        // test initial display as well
+
+    }
+
+    @Test
+    fun fullyQualifiedRemovableStorageRenamed() {
+        // test initial display as well
+
+    }
+
+    @Test
+    fun providerLinkRemovableStorageRenamed() {
+        // test initial display as well
+
+    }
+
+    @Test
+    fun fullyQualifiedRemovableStorageRemoved() {
+        // test initial display as well
+
+    }
+
+    @Test
+    fun providerLinkRemovableStorageRemoved() {
+        // test initial display as well
+
+    }
+
     private fun addWidget(idx: Int): UiObject2 {
         goHome()
         val widgetType = findWidgetInSelector()
@@ -118,41 +276,6 @@ class UiTest {
         return widgetView!!
     }
 
-    private fun goHome() {
-        device.pressHome()
-        val launcherPackageName = device.launcherPackageName!!
-        device.wait(Until.hasObject(By.pkg(launcherPackageName).depth(0)), ACTION_TIMEOUT)
-    }
-
-    private fun findWidgetInSelector(): UiObject2 {
-        // long press at the center
-        val screenCenter = Point(device.displayWidth / 2, device.displayHeight / 2)
-        val longPressSteps = 100
-        device.swipe(arrayOf(screenCenter, screenCenter), longPressSteps)
-
-        // open widgets selector
-        val contextMenuItem = device.wait(Until.findObject(By.text("Widgets")), ACTION_TIMEOUT)
-        assertNotNull(contextMenuItem)
-        contextMenuItem.click()
-        // don't like this, but need to wait on emulator till widgets list is ready
-        device.wait(Until.findObject(By.res("widgets_list_view")), ACTION_TIMEOUT)
-
-        // swipe to the target widget
-        var appSectionHeader = device.findObject(By.desc(appName))
-        val startTime = SystemClock.uptimeMillis()
-        val swipeSteps = 100
-        while (appSectionHeader == null && SystemClock.uptimeMillis() - startTime < 30000) {
-            device.swipe(screenCenter.x, device.displayHeight / 2, screenCenter.x, 0, swipeSteps)
-            appSectionHeader = device.findObject(By.desc(appName))
-        }
-        // scroll to get more of a widget on the screen
-        device.swipe(screenCenter.x, device.displayHeight / 2, screenCenter.x, 0, swipeSteps)
-
-        val widgetObjects = device.findObjects(By.text(widgetLabel)) // if the widget label is not specified explicitly, app section will be there too
-        val widgetType = widgetObjects.maxByOrNull { it.visibleCenter.y }
-        assertNotNull(widgetType)
-        return widgetType!!
-    }
 
     private fun selectTestDocument(fileName: String) {
         // open downloads
@@ -176,17 +299,23 @@ class UiTest {
         assertNotEquals(0, addedWidgets.size)
         return addedWidgets.find { it.hasObject(By.clazz(TextView::class.java).text(fileName)) }
     }
+}
 
-    private fun removeAllWidgets() {
-        goHome()
+@RunWith(AndroidJUnit4::class)
+class MediaTest {
+    @Test
+    fun fullyQualifiedMedia() {
+        // photo
 
-        val addedWidgets = device.wait(Until.findObjects(By.desc(widgetLabel)), ACTION_TIMEOUT)
-        addedWidgets?.forEach {
-            val widgetTapPoint = Point(it.visibleBounds.centerX(), it.visibleBounds.centerY())
-            val trashPoint = Point(device.displayWidth / 2, device.displayHeight / 10)
-            val moveSteps = 100
-            device.swipe(arrayOf(widgetTapPoint, widgetTapPoint, trashPoint), moveSteps)
-            assert(device.wait(Until.hasObject(By.text("Item removed")), ACTION_TIMEOUT))
-        }
+        // music
+
+    }
+
+    @Test
+    fun providerLinkMedia() {
+        // photo
+
+        // music
+
     }
 }
