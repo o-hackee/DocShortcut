@@ -5,6 +5,7 @@ import android.graphics.Point
 import android.os.Build
 import android.os.Environment
 import android.os.SystemClock
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
@@ -34,6 +35,10 @@ import java.util.regex.Pattern
 @RunWith(AndroidJUnit4::class)
 open class UiTest {
 
+    companion object {
+        const val ACTION_TIMEOUT: Long = 5000
+    }
+
     protected val device: UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
     protected val targetContext: Context = InstrumentationRegistry.getInstrumentation().targetContext
 
@@ -50,7 +55,7 @@ open class UiTest {
             val trashPoint = Point(device.displayWidth / 2, device.displayHeight / 10)
             val moveSteps = 100
             device.swipe(arrayOf(widgetTapPoint, widgetTapPoint, trashPoint), moveSteps)
-            assert(device.wait(Until.hasObject(By.text("Item removed")), DocumentsUiTest.ACTION_TIMEOUT))
+            assert(device.wait(Until.hasObject(By.text("Item removed")), ACTION_TIMEOUT))
         }
     }
 
@@ -74,15 +79,12 @@ open class UiTest {
 
         // press the button on the configuration activity
         val textPattern = Pattern.compile(targetContext.getString(R.string.select_document), Pattern.CASE_INSENSITIVE)
-        val button = device.wait(Until.findObject(By.text(textPattern).clazz(Button::class.java)),
-            DocumentsUiTest.ACTION_TIMEOUT
-        )
+        val button = device.wait(Until.findObject(By.text(textPattern).clazz(Button::class.java)), ACTION_TIMEOUT)
         assertNotNull(button)
 
         if (upToFilePicker) {
             button.click()
-            assert(device.wait(Until.hasObject(By.desc("Show roots").clazz(ImageButton::class.java)),
-                DocumentsUiTest.ACTION_TIMEOUT
+            assert(device.wait(Until.hasObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT
             ))
         }
         if (pressHome)
@@ -96,17 +98,13 @@ open class UiTest {
 
     protected fun goHome() {
         device.pressHome()
-        assert(device.wait(Until.hasObject(By.pkg(device.launcherPackageName!!).depth(0)),
-            DocumentsUiTest.ACTION_TIMEOUT
-        ))
+        assert(device.wait(Until.hasObject(By.pkg(device.launcherPackageName!!).depth(0)), ACTION_TIMEOUT))
     }
 
     private fun goBackUpToHome() {
         do {
             device.pressBack()
-        } while (!device.wait(Until.hasObject(By.pkg(device.launcherPackageName!!).depth(0)),
-                DocumentsUiTest.ACTION_TIMEOUT / 2
-            ))
+        } while (!device.wait(Until.hasObject(By.pkg(device.launcherPackageName!!).depth(0)), ACTION_TIMEOUT / 2))
     }
 
     protected fun findWidgetInSelector(): UiObject2 {
@@ -116,11 +114,11 @@ open class UiTest {
         device.swipe(arrayOf(screenCenter, screenCenter), longPressSteps)
 
         // open widgets selector
-        val contextMenuItem = device.wait(Until.findObject(By.text("Widgets")), DocumentsUiTest.ACTION_TIMEOUT)
+        val contextMenuItem = device.wait(Until.findObject(By.text("Widgets")), ACTION_TIMEOUT)
         assertNotNull(contextMenuItem)
         contextMenuItem.click()
         // don't like this, but need to wait on emulator till widgets list is ready
-        device.wait(Until.findObject(By.res("widgets_list_view")), DocumentsUiTest.ACTION_TIMEOUT)
+        device.wait(Until.findObject(By.res("widgets_list_view")), ACTION_TIMEOUT)
 
         // swipe to the target widget
         var appSectionHeader = device.findObject(By.desc(appName))
@@ -144,7 +142,6 @@ open class UiTest {
 class DocumentsUiTest : UiTest() {
 
     companion object {
-        const val ACTION_TIMEOUT: Long = 5000
         const val testDataFolderName = "testdata"
         val viewerApps = listOf("com.google.android.apps.docs", "com.adobe.reader")
     }
@@ -172,6 +169,7 @@ class DocumentsUiTest : UiTest() {
     fun clear() {
         if (::testsDataFolder.isInitialized) {
             testsDataFolder.listFiles()?.forEach {
+                Log.i("OLKO", "deleting $it")
                 it.delete()
             }
             testsDataFolder.delete()
@@ -180,7 +178,7 @@ class DocumentsUiTest : UiTest() {
 
     @Test
     fun addMultipleWidgets() {
-        val widgetViews = fileNames.indices.map { addWidget(it) }
+        val widgetViews = fileNames.indices.map { addWidget(it, useProviderLink = true) }
         widgetViews.forEachIndexed { widgetIdx, widgetView -> viewDocument(widgetView, fileNames[widgetIdx]) }
     }
 
@@ -193,59 +191,16 @@ class DocumentsUiTest : UiTest() {
     @Test
     fun providerLinkRenamed() {
         // test initial display as well
-        val widgetView = addWidget(fileNames.lastIndex)
+        val widgetView = addWidget(fileNames.lastIndex, useProviderLink = true)
         val fileName = fileNames.last()
         viewDocument(widgetView, fileName)
 
-        goHome()
-        val filesAppName = "Files"
-        val appDrawer = UiScrollable(UiSelector().scrollable(true))
-        if (appDrawer.exists()) {
-            appDrawer.scrollForward()
-            appDrawer.scrollTextIntoView(filesAppName)
-        } else {
-            device.swipe(device.displayWidth / 2, device.displayHeight / 2, device.displayWidth / 2, 0, 100)
-        }
-        val filesAppShortcut = device.wait(Until.findObject(By.text(filesAppName)), ACTION_TIMEOUT)
-        assertNotNull(filesAppShortcut)
-        // alternatively use testContext.packageManager.getLaunchIntentForPackage() ("com.android.documentsui" or "com.google.android.apps.nbu.files")
-        // and testContext.startActivity() - and for "com.google.android.apps.nbu.files" that would be better cause old task might be brought up
-
-        filesAppShortcut.click()
-        val (fileLabel, trickyApp) = filesAppNavigateToTestDocumentViaProviderLink(fileName)
-        if (trickyApp) {
-            val longPressSteps = 100
-            device.swipe(arrayOf(fileLabel.visibleCenter, fileLabel.visibleCenter), longPressSteps)
-        }
-        else
-            fileLabel.longClick()
-
-        val image = device.wait(Until.findObject(By.clazz(ImageView::class.java).desc("More options")), ACTION_TIMEOUT)
-        assertNotNull(image)
-        image.click()
-        clickLabel(By.text("Rename"))
-        val editText = device.wait(Until.findObject(By.clazz(EditText::class.java)), ACTION_TIMEOUT)
-        assertNotNull(editText)
+        openFilesApp()
         val newName = "renamed_$fileName"
-        editText.text = newName
-        val textPattern = Pattern.compile(targetContext.getString(android.R.string.ok), Pattern.CASE_INSENSITIVE)
-        val button = device.wait(Until.findObject(By.text(textPattern).clazz(Button::class.java)), ACTION_TIMEOUT)
-        assertNotNull(button)
-        button.click()
-        device.wait(Until.hasObject(By.text("File renamed")), ACTION_TIMEOUT)
+        renameFile(fileName, newName, useProviderLink = true)
 
-        // close both "Files" (if is trickyApp) & viewer
-        device.pressRecentApps()
-        val clearAllSelector = By.text(Pattern.compile("Clear All", Pattern.CASE_INSENSITIVE))
-        var clearAll = device.findObject(clearAllSelector)
-        val startTime = SystemClock.uptimeMillis()
-        val swipeSteps = 100
-        while (clearAll == null && SystemClock.uptimeMillis() - startTime < 30000) {
-            device.swipe(0, device.displayHeight / 2, device.displayWidth, device.displayHeight / 2, swipeSteps)
-            clearAll = device.findObject(clearAllSelector)
-        }
-        assertNotNull(clearAll)
-        clearAll.click()
+        // close both "Files" (crucial if is trickyApp) & viewer
+        closeRecentApps()
 
         goHome()
         val shouldBeHandled = !isEmulator() // actually on emulator it might differ from launch to launch
@@ -253,14 +208,32 @@ class DocumentsUiTest : UiTest() {
         if (shouldBeHandled) {
             viewDocument(widgetView, newName)
             goHome()
-            // TODO do we guarantee it's updated right now actually? do recheck
-//            assertEquals(newName, widgetFileLabel.text)
+            device.waitForIdle()
+            assertEquals(newName, widgetFileLabel.text)
             assertEquals(targetContext.getString(R.string.appwidget_text), widgetFileLabel.contentDescription)
         } else {
             widgetView.click()
-//            assert(device.wait(Until.hasObject(By.clazz(Toast::class.java)), ACTION_TIMEOUT))
+            // unable to catch Toast, just make sure document is not opened
             verifyUnableToViewDocument()
-            assertEquals(targetContext.getString(R.string.appwidget_invalid_text), widgetFileLabel?.contentDescription)
+            assertEquals(targetContext.getString(R.string.appwidget_invalid_text), widgetFileLabel.contentDescription)
+        }
+
+        // rename back
+        openFilesApp()
+        renameFile(newName, fileName, useProviderLink = true)
+        closeRecentApps()
+        goHome()
+        val backShouldBeHandled = !isEmulator()
+        if (backShouldBeHandled) {
+            viewDocument(widgetView, newName)
+            goHome()
+            device.waitForIdle()
+            assertEquals(fileName, widgetFileLabel.text)
+            assertEquals(targetContext.getString(R.string.appwidget_text), widgetFileLabel.contentDescription)
+        } else {
+            widgetView.click()
+            verifyUnableToViewDocument()
+            assertEquals(targetContext.getString(R.string.appwidget_invalid_text), widgetFileLabel.contentDescription)
         }
     }
 
@@ -300,7 +273,8 @@ class DocumentsUiTest : UiTest() {
 
     }
 
-    private fun addWidget(idx: Int): UiObject2 {
+    // TODO
+    private fun addWidget(idx: Int, useProviderLink: Boolean): UiObject2 {
         goHome()
         val widgetType = findWidgetInSelector()
 
@@ -329,7 +303,18 @@ class DocumentsUiTest : UiTest() {
 
         clickLabel(By.text("Browse"))
         clickLabel(By.text("Downloads"))
-        clickLabel(By.text(testDataFolderName))
+
+        val testDataSelector = By.text(testDataFolderName).clazz(TextView::class.java)
+        var testDataLabel = device.wait(Until.findObject(testDataSelector), ACTION_TIMEOUT)
+        val startTime = SystemClock.uptimeMillis()
+        while (testDataLabel == null && SystemClock.uptimeMillis() - startTime < 15000) {
+            device.pressBack()
+            clickLabel(By.text("Downloads"))
+            testDataLabel = device.wait(Until.findObject(testDataSelector), ACTION_TIMEOUT)
+        }
+        assertNotNull(testDataLabel)
+        testDataLabel.click()
+
         val fileLabel = device.wait(Until.findObject(By.text(fileName).clazz(TextView::class.java)), ACTION_TIMEOUT)
         assertNotNull(fileLabel)
         return fileLabel to true
@@ -398,6 +383,61 @@ class DocumentsUiTest : UiTest() {
             }
         }
         assertEquals("", viewerApp)
+    }
+
+    private fun openFilesApp() {
+        goHome()
+        val filesAppName = "Files"
+        val appDrawer = UiScrollable(UiSelector().scrollable(true))
+        if (appDrawer.exists()) {
+            appDrawer.scrollForward()
+            appDrawer.scrollTextIntoView(filesAppName)
+        } else {
+            device.swipe(device.displayWidth / 2, device.displayHeight / 2, device.displayWidth / 2, 0, 100)
+        }
+        val filesAppShortcut = device.wait(Until.findObject(By.text(filesAppName)), ACTION_TIMEOUT)
+        assertNotNull(filesAppShortcut)
+        // alternatively use testContext.packageManager.getLaunchIntentForPackage() ("com.android.documentsui" or "com.google.android.apps.nbu.files")
+        // and testContext.startActivity() - and for "com.google.android.apps.nbu.files" that would be better cause old task might be brought up
+
+        filesAppShortcut.click()
+    }
+
+    // TODO
+    private fun renameFile(fileName: String, newName: String, useProviderLink: Boolean) {
+        val (fileLabel, trickyApp) = filesAppNavigateToTestDocumentViaProviderLink(fileName)
+        if (trickyApp) {
+            val longPressSteps = 100
+            device.swipe(arrayOf(fileLabel.visibleCenter, fileLabel.visibleCenter), longPressSteps)
+        } else
+            fileLabel.longClick()
+
+        val image = device.wait(Until.findObject(By.clazz(ImageView::class.java).desc("More options")), ACTION_TIMEOUT)
+        assertNotNull(image)
+        image.click()
+        clickLabel(By.text("Rename"))
+        val editText = device.wait(Until.findObject(By.clazz(EditText::class.java)), ACTION_TIMEOUT)
+        assertNotNull(editText)
+        editText.text = newName
+        val textPattern = Pattern.compile(targetContext.getString(android.R.string.ok), Pattern.CASE_INSENSITIVE)
+        val button = device.wait(Until.findObject(By.text(textPattern).clazz(Button::class.java)), ACTION_TIMEOUT)
+        assertNotNull(button)
+        button.click()
+        device.wait(Until.hasObject(By.text("File renamed")), ACTION_TIMEOUT)
+    }
+
+    private fun closeRecentApps() {
+        device.pressRecentApps()
+        val clearAllSelector = By.text(Pattern.compile("Clear All", Pattern.CASE_INSENSITIVE))
+        var clearAll = device.findObject(clearAllSelector)
+        val startTime = SystemClock.uptimeMillis()
+        val swipeSteps = 100
+        while (clearAll == null && SystemClock.uptimeMillis() - startTime < 30000) {
+            device.swipe(0, device.displayHeight / 2, device.displayWidth, device.displayHeight / 2, swipeSteps)
+            clearAll = device.findObject(clearAllSelector)
+        }
+        assertNotNull(clearAll)
+        clearAll.click()
     }
 
     private fun isEmulator(): Boolean = Build.MODEL.contains("Android SDK built for x86")
