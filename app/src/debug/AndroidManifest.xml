@@ -2,10 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="ol.ko.docshortcut">
 
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>
-
-    <application
-        android:requestLegacyExternalStorage="true">
+    <application>
+        <!--let it live here for now-->
+        <activity
+            android:name="ol.ko.docshortcut.TestActivity">
+        </activity>
     </application>
 
 </manifest>

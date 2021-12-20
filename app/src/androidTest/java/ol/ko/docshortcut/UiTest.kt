@@ -2,15 +2,16 @@ package ol.ko.docshortcut
 
 import android.content.Context
 import android.graphics.Point
+import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.os.SystemClock
-import android.util.Log
+import android.provider.DocumentsContract
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.test.core.app.launchActivity
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.uiautomator.By
@@ -28,7 +29,9 @@ import org.junit.runner.RunWith
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.FileOutputStream
+import java.io.IOException
 import java.util.regex.Pattern
 
 
@@ -146,33 +149,54 @@ class DocumentsUiTest : UiTest() {
         val viewerApps = listOf("com.google.android.apps.docs", "com.adobe.reader")
     }
 
-    private lateinit var testsDataFolder: File
     private lateinit var fileNames: Array<String>
+    private val fileUris = mutableListOf<Uri>()
 
     @Before
-    fun copyFiles() {
+    fun createFiles() {
         val testContext = InstrumentationRegistry.getInstrumentation().context
         fileNames = testContext.resources.assets.list(testDataFolderName) ?: arrayOf()
-        testsDataFolder = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), testDataFolderName)
-        assert(testsDataFolder.mkdir())
 
-        fileNames.forEach {
-            val dest = File(testsDataFolder, it)
-            assert(dest.createNewFile())
-            testContext.assets.open(testDataFolderName + File.separator + it).use { src ->
-                src.copyTo(FileOutputStream(dest))
+        fileNames.forEach { fileName ->
+            val scenario = launchActivity<TestActivity>()
+            var createdFileUri: Uri? = null
+            scenario.onActivity {
+                it.launchDocumentCreator(fileName) { obtainedUri -> createdFileUri = obtainedUri }
+            }
+            val rootsButton =
+                device.wait(Until.findObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT)
+            assertNotNull(rootsButton)
+            rootsButton.click()
+            clickLabel(By.text("Downloads").res("android", "title"))
+            val saveButton = device.wait(Until.findObject(By.text(Pattern.compile("Save", Pattern.CASE_INSENSITIVE))), ACTION_TIMEOUT)
+            assertNotNull(saveButton)
+            saveButton.click()
+
+            device.wait(Until.findObject(By.text("non-existing object")), ACTION_TIMEOUT)
+            assertNotNull(createdFileUri)
+            fileUris.add(createdFileUri!!)
+            try {
+                targetContext.contentResolver.openFileDescriptor(createdFileUri!!, "w")?.use { it ->
+                    FileOutputStream(it.fileDescriptor).use { destStream ->
+                        testContext.assets.open(testDataFolderName + File.separator + fileName).use { src ->
+                            src.copyTo(destStream)
+                        }
+                    }
+                }
+            } catch (e: FileNotFoundException) {
+                e.printStackTrace()
+                assert(false) { "file create failed" }
+            } catch (e: IOException) {
+                e.printStackTrace()
+                assert(false) { "file create failed" }
             }
         }
     }
 
     @After
-    fun clear() {
-        if (::testsDataFolder.isInitialized) {
-            testsDataFolder.listFiles()?.forEach {
-                Log.i("OLKO", "deleting $it")
-                it.delete()
-            }
-            testsDataFolder.delete()
+    fun clearFiles() {
+        fileUris.forEach {
+            DocumentsContract.deleteDocument(targetContext.contentResolver, it)
         }
     }
 
@@ -203,8 +227,9 @@ class DocumentsUiTest : UiTest() {
         closeRecentApps()
 
         goHome()
-        val shouldBeHandled = !isEmulator() // actually on emulator it might differ from launch to launch
+        val shouldBeHandled = isEmulator()
         val widgetFileLabel = widgetView.findObject(By.clazz(TextView::class.java))
+        device.waitForIdle()
         if (shouldBeHandled) {
             viewDocument(widgetView, newName)
             goHome()
@@ -223,9 +248,9 @@ class DocumentsUiTest : UiTest() {
         renameFile(newName, fileName, useProviderLink = true)
         closeRecentApps()
         goHome()
-        val backShouldBeHandled = !isEmulator()
+        val backShouldBeHandled = true
         if (backShouldBeHandled) {
-            viewDocument(widgetView, newName)
+            viewDocument(widgetView, fileName)
             goHome()
             device.waitForIdle()
             assertEquals(fileName, widgetFileLabel.text)
@@ -304,17 +329,6 @@ class DocumentsUiTest : UiTest() {
         clickLabel(By.text("Browse"))
         clickLabel(By.text("Downloads"))
 
-        val testDataSelector = By.text(testDataFolderName).clazz(TextView::class.java)
-        var testDataLabel = device.wait(Until.findObject(testDataSelector), ACTION_TIMEOUT)
-        val startTime = SystemClock.uptimeMillis()
-        while (testDataLabel == null && SystemClock.uptimeMillis() - startTime < 15000) {
-            device.pressBack()
-            clickLabel(By.text("Downloads"))
-            testDataLabel = device.wait(Until.findObject(testDataSelector), ACTION_TIMEOUT)
-        }
-        assertNotNull(testDataLabel)
-        testDataLabel.click()
-
         val fileLabel = device.wait(Until.findObject(By.text(fileName).clazz(TextView::class.java)), ACTION_TIMEOUT)
         assertNotNull(fileLabel)
         return fileLabel to true
@@ -327,7 +341,6 @@ class DocumentsUiTest : UiTest() {
         assertNotNull(rootsButton)
         rootsButton.click()
         clickLabel(By.text("Downloads").res("android", "title"))
-        clickLabel(By.text(testDataFolderName))
         val fileLabel = device.wait(Until.findObject(By.text(fileName).clazz(TextView::class.java)), ACTION_TIMEOUT)
         assertNotNull(fileLabel)
         return fileLabel
