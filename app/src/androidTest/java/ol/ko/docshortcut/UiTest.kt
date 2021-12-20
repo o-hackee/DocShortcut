@@ -208,8 +208,15 @@ class DocumentsUiTest : UiTest() {
 
     @Test
     fun fullyQualifiedRenamed() {
-        // test initial display as well
+        val widgetView = addWidget(fileNames.lastIndex, useProviderLink = false)
+        val fileName = fileNames.last()
+        viewDocument(widgetView, fileName)
 
+        // actually it doesn't matter how we navigate to the file to rename it, it only matters how we obtain the uri while creating,
+        // but keeping the same way
+        val newName = "renamed_$fileName"
+        handleRenaming(fileName, newName, useProviderLink = false, widgetView, shouldBeHandled = false)
+        handleRenaming(newName, fileName, useProviderLink = false, widgetView, shouldBeHandled = !isEmulator())
     }
 
     @Test
@@ -219,8 +226,8 @@ class DocumentsUiTest : UiTest() {
         viewDocument(widgetView, fileName)
 
         val newName = "renamed_$fileName"
-        handleRenaming(fileName, newName, true, widgetView, isEmulator())
-        handleRenaming(newName, fileName, true, widgetView, true)
+        handleRenaming(fileName, newName, useProviderLink = true, widgetView, shouldBeHandled =  isEmulator())
+        handleRenaming(newName, fileName, useProviderLink = true, widgetView, shouldBeHandled = true)
     }
 
     @Test
@@ -259,7 +266,6 @@ class DocumentsUiTest : UiTest() {
 
     }
 
-    // TODO
     private fun addWidget(idx: Int, useProviderLink: Boolean): UiObject2 {
         goHome()
         val widgetType = findWidgetInSelector()
@@ -288,8 +294,14 @@ class DocumentsUiTest : UiTest() {
         }
 
         clickLabel(By.text("Browse"))
-        clickLabel(By.text("Downloads"))
-
+        if (useProviderLink) {
+            clickLabel(By.text("Downloads"))
+        } else {
+            val internalStorage = scrollDownTo(By.text("Internal storage"))
+            assertNotNull(internalStorage)
+            internalStorage!!.click()
+            clickLabel(By.text("Download"))
+        }
         val fileLabel = device.wait(Until.findObject(By.text(fileName).clazz(TextView::class.java)), ACTION_TIMEOUT)
         assertNotNull(fileLabel)
         return fileLabel to true
@@ -335,7 +347,7 @@ class DocumentsUiTest : UiTest() {
         val startTime = SystemClock.uptimeMillis()
         val swipeSteps = 100
         while (obj == null && SystemClock.uptimeMillis() - startTime < 30000) {
-            device.swipe(device.displayWidth / 2, device.displayHeight, device.displayWidth / 2, 0, swipeSteps)
+            device.swipe(device.displayWidth / 2, 3 * device.displayHeight / 4, device.displayWidth / 2, 0, swipeSteps)
             obj = device.findObject(bySelector)
         }
         return obj
@@ -391,7 +403,6 @@ class DocumentsUiTest : UiTest() {
         image.click()
     }
 
-    // TODO
     private fun handleRenaming(fromFileName: String, toFileName:String, useProviderLink: Boolean, widgetView: UiObject2, shouldBeHandled: Boolean) {
         openFilesApp()
         renameFile(fromFileName, toFileName, useProviderLink)
@@ -408,7 +419,9 @@ class DocumentsUiTest : UiTest() {
         } else {
             widgetView.click()
             // unable to catch Toast, just make sure document is not opened
+            // also can be tried to view in another app (e.g. Contacts), also needs back or home then
             verifyUnableToViewDocument()
+            goHome()
             assertEquals(targetContext.getString(R.string.appwidget_invalid_text), widgetFileLabel.contentDescription)
         }
     }
@@ -431,7 +444,6 @@ class DocumentsUiTest : UiTest() {
         filesAppShortcut.click()
     }
 
-    // TODO
     private fun renameFile(fileName: String, newName: String, useProviderLink: Boolean) {
         val (fileLabel, trickyApp) = filesAppNavigateToTestDocument(fileName, useProviderLink)
         if (trickyApp) {
