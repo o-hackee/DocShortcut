@@ -214,52 +214,13 @@ class DocumentsUiTest : UiTest() {
 
     @Test
     fun providerLinkRenamed() {
-        // test initial display as well
         val widgetView = addWidget(fileNames.lastIndex, useProviderLink = true)
         val fileName = fileNames.last()
         viewDocument(widgetView, fileName)
 
-        openFilesApp()
         val newName = "renamed_$fileName"
-        renameFile(fileName, newName, useProviderLink = true)
-
-        // close both "Files" (crucial if is trickyApp) & viewer
-        closeRecentApps()
-
-        goHome()
-        val shouldBeHandled = isEmulator()
-        val widgetFileLabel = widgetView.findObject(By.clazz(TextView::class.java))
-        device.waitForIdle()
-        if (shouldBeHandled) {
-            viewDocument(widgetView, newName)
-            goHome()
-            device.waitForIdle()
-            assertEquals(newName, widgetFileLabel.text)
-            assertEquals(targetContext.getString(R.string.appwidget_text), widgetFileLabel.contentDescription)
-        } else {
-            widgetView.click()
-            // unable to catch Toast, just make sure document is not opened
-            verifyUnableToViewDocument()
-            assertEquals(targetContext.getString(R.string.appwidget_invalid_text), widgetFileLabel.contentDescription)
-        }
-
-        // rename back
-        openFilesApp()
-        renameFile(newName, fileName, useProviderLink = true)
-        closeRecentApps()
-        goHome()
-        val backShouldBeHandled = true
-        if (backShouldBeHandled) {
-            viewDocument(widgetView, fileName)
-            goHome()
-            device.waitForIdle()
-            assertEquals(fileName, widgetFileLabel.text)
-            assertEquals(targetContext.getString(R.string.appwidget_text), widgetFileLabel.contentDescription)
-        } else {
-            widgetView.click()
-            verifyUnableToViewDocument()
-            assertEquals(targetContext.getString(R.string.appwidget_invalid_text), widgetFileLabel.contentDescription)
-        }
+        handleRenaming(fileName, newName, true, widgetView, isEmulator())
+        handleRenaming(newName, fileName, true, widgetView, true)
     }
 
     @Test
@@ -396,6 +357,28 @@ class DocumentsUiTest : UiTest() {
             }
         }
         assertEquals("", viewerApp)
+    }
+
+    // TODO
+    private fun handleRenaming(fromFileName: String, toFileName:String, useProviderLink: Boolean, widgetView: UiObject2, shouldBeHandled: Boolean) {
+        openFilesApp()
+        renameFile(fromFileName, toFileName, useProviderLink)
+        // close both "Files" (crucial if is trickyApp) & viewer
+        closeRecentApps()
+        goHome()
+        val widgetFileLabel = widgetView.findObject(By.clazz(TextView::class.java))
+        if (shouldBeHandled) {
+            viewDocument(widgetView, toFileName)
+            goHome()
+            device.waitForIdle()
+            assertEquals(toFileName, widgetFileLabel.text)
+            assertEquals(targetContext.getString(R.string.appwidget_text), widgetFileLabel.contentDescription)
+        } else {
+            widgetView.click()
+            // unable to catch Toast, just make sure document is not opened
+            verifyUnableToViewDocument()
+            assertEquals(targetContext.getString(R.string.appwidget_invalid_text), widgetFileLabel.contentDescription)
+        }
     }
 
     private fun openFilesApp() {
