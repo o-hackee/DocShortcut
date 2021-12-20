@@ -276,15 +276,15 @@ class DocumentsUiTest : UiTest() {
         assertNotNull(button)
         button.click()
 
-        filePickerNavigateToTestDocumentViaProviderLink(fileNames[idx]).click()
+        filePickerNavigateToTestDocument(fileNames[idx], useProviderLink).click()
         val widgetView = getAddedWidget(fileNames[idx])
         assertNotNull(widgetView)
         return widgetView!!
     }
 
-    private fun filesAppNavigateToTestDocumentViaProviderLink(fileName: String): Pair<UiObject2, Boolean> {
+    private fun filesAppNavigateToTestDocument(fileName: String, useProviderLink: Boolean): Pair<UiObject2, Boolean> {
         if (device.wait(Until.hasObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT)) {
-            return filePickerNavigateToTestDocumentViaProviderLink(fileName) to false
+            return filePickerNavigateToTestDocument(fileName, useProviderLink) to false
         }
 
         clickLabel(By.text("Browse"))
@@ -295,22 +295,50 @@ class DocumentsUiTest : UiTest() {
         return fileLabel to true
     }
 
-    private fun filePickerNavigateToTestDocumentViaProviderLink(fileName: String): UiObject2 {
+    private fun filePickerNavigateToTestDocument(fileName: String, useProviderLink: Boolean): UiObject2 {
         // open downloads
         val rootsButton =
             device.wait(Until.findObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT)
         assertNotNull(rootsButton)
         rootsButton.click()
-        clickLabel(By.text("Downloads").res("android", "title"))
-        val fileLabel = device.wait(Until.findObject(By.text(fileName).clazz(TextView::class.java)), ACTION_TIMEOUT)
+        if (useProviderLink) {
+            clickLabel(By.text("Downloads").res("android", "title"))
+        } else {
+            var internalStorageLabel = device.wait(Until.findObject(By.text(Build.MODEL)), ACTION_TIMEOUT)
+            if (isEmulator() && internalStorageLabel == null) {
+                clickMoreOptions()
+                clickMoreOptions()
+                clickLabel(By.text("Show internal storage"))
+                rootsButton.click()
+                internalStorageLabel = device.wait(Until.findObject(By.text(Build.MODEL)), ACTION_TIMEOUT)
+            }
+            assertNotNull(internalStorageLabel)
+            internalStorageLabel.click()
+
+            val downloadFolder = scrollDownTo(By.text("Download"))
+            assertNotNull(downloadFolder)
+            downloadFolder!!.click()
+        }
+        val fileLabel = scrollDownTo(By.text(fileName).clazz(TextView::class.java))
         assertNotNull(fileLabel)
-        return fileLabel
+        return fileLabel!!
     }
 
     private fun clickLabel(bySelector: BySelector) {
         val label = device.wait(Until.findObject(bySelector.clazz(TextView::class.java)), ACTION_TIMEOUT)
         assertNotNull(label)
         label.click()
+    }
+
+    private fun scrollDownTo(bySelector: BySelector): UiObject2? {
+        var obj = device.findObject(bySelector)
+        val startTime = SystemClock.uptimeMillis()
+        val swipeSteps = 100
+        while (obj == null && SystemClock.uptimeMillis() - startTime < 30000) {
+            device.swipe(device.displayWidth / 2, device.displayHeight, device.displayWidth / 2, 0, swipeSteps)
+            obj = device.findObject(bySelector)
+        }
+        return obj
     }
 
     private fun getAddedWidget(fileName: String, withDescription: Boolean = true): UiObject2? {
@@ -339,9 +367,7 @@ class DocumentsUiTest : UiTest() {
         when (viewerApp) {
             viewerApps[0] -> assert(device.hasObject(By.text(fileName)))
             viewerApps[1] -> {
-                val image = device.wait(Until.findObject(By.clazz(ImageView::class.java).desc("More options")), ACTION_TIMEOUT)
-                assertNotNull(image)
-                image.click()
+                clickMoreOptions()
                 val fileNameWithoutExtension = File(fileName).nameWithoutExtension
                 assert(device.wait(Until.hasObject(By.text(fileNameWithoutExtension)), ACTION_TIMEOUT))
             }
@@ -357,6 +383,12 @@ class DocumentsUiTest : UiTest() {
             }
         }
         assertEquals("", viewerApp)
+    }
+
+    private fun clickMoreOptions() {
+        val image = device.wait(Until.findObject(By.clazz(ImageView::class.java).desc("More options")), ACTION_TIMEOUT)
+        assertNotNull(image)
+        image.click()
     }
 
     // TODO
@@ -401,16 +433,14 @@ class DocumentsUiTest : UiTest() {
 
     // TODO
     private fun renameFile(fileName: String, newName: String, useProviderLink: Boolean) {
-        val (fileLabel, trickyApp) = filesAppNavigateToTestDocumentViaProviderLink(fileName)
+        val (fileLabel, trickyApp) = filesAppNavigateToTestDocument(fileName, useProviderLink)
         if (trickyApp) {
             val longPressSteps = 100
             device.swipe(arrayOf(fileLabel.visibleCenter, fileLabel.visibleCenter), longPressSteps)
         } else
             fileLabel.longClick()
 
-        val image = device.wait(Until.findObject(By.clazz(ImageView::class.java).desc("More options")), ACTION_TIMEOUT)
-        assertNotNull(image)
-        image.click()
+        clickMoreOptions()
         clickLabel(By.text("Rename"))
         val editText = device.wait(Until.findObject(By.clazz(EditText::class.java)), ACTION_TIMEOUT)
         assertNotNull(editText)
