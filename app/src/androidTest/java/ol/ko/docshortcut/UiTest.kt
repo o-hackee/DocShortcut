@@ -154,49 +154,58 @@ class DocumentsUiTest : UiTest() {
 
     @Before
     fun createFiles() {
-        val testContext = InstrumentationRegistry.getInstrumentation().context
-        fileNames = testContext.resources.assets.list(testDataFolderName) ?: arrayOf()
+        fileNames = InstrumentationRegistry.getInstrumentation().context.resources.assets.list(testDataFolderName) ?: arrayOf()
 
         fileNames.forEach { fileName ->
-            val scenario = launchActivity<TestActivity>()
-            var createdFileUri: Uri? = null
-            scenario.onActivity {
-                it.launchDocumentCreator(fileName) { obtainedUri -> createdFileUri = obtainedUri }
-            }
-            val rootsButton =
-                device.wait(Until.findObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT)
-            assertNotNull(rootsButton)
-            rootsButton.click()
-            clickLabel(By.text("Downloads").res("android", "title"))
-            val saveButton = device.wait(Until.findObject(By.text(Pattern.compile("Save", Pattern.CASE_INSENSITIVE))), ACTION_TIMEOUT)
-            assertNotNull(saveButton)
-            saveButton.click()
+            createFile(fileName)
+        }
+    }
 
-            device.wait(Until.findObject(By.text("non-existing object")), ACTION_TIMEOUT)
-            assertNotNull(createdFileUri)
-            fileUris.add(createdFileUri!!)
-            try {
-                targetContext.contentResolver.openFileDescriptor(createdFileUri!!, "w")?.use { it ->
-                    FileOutputStream(it.fileDescriptor).use { destStream ->
-                        testContext.assets.open(testDataFolderName + File.separator + fileName).use { src ->
-                            src.copyTo(destStream)
-                        }
+    private fun createFile(fileName: String) {
+        val scenario = launchActivity<TestActivity>()
+        var createdFileUri: Uri? = null
+        scenario.onActivity {
+            it.launchDocumentCreator(fileName) { obtainedUri -> createdFileUri = obtainedUri }
+        }
+        val rootsButton =
+            device.wait(Until.findObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT)
+        assertNotNull(rootsButton)
+        rootsButton.click()
+        clickLabel(By.text("Downloads").res("android", "title"))
+        val saveButton =
+            device.wait(Until.findObject(By.text(Pattern.compile("Save", Pattern.CASE_INSENSITIVE))), ACTION_TIMEOUT)
+        assertNotNull(saveButton)
+        saveButton.click()
+
+        device.wait(Until.findObject(By.text("non-existing object")), ACTION_TIMEOUT)
+        assertNotNull(createdFileUri)
+        fileUris.add(createdFileUri!!)
+        try {
+            targetContext.contentResolver.openFileDescriptor(createdFileUri!!, "w")?.use { it ->
+                FileOutputStream(it.fileDescriptor).use { destStream ->
+                    val testContext = InstrumentationRegistry.getInstrumentation().context
+                    testContext.assets.open(testDataFolderName + File.separator + fileName).use { src ->
+                        src.copyTo(destStream)
                     }
                 }
-            } catch (e: FileNotFoundException) {
-                e.printStackTrace()
-                assert(false) { "file create failed" }
-            } catch (e: IOException) {
-                e.printStackTrace()
-                assert(false) { "file create failed" }
             }
+        } catch (e: FileNotFoundException) {
+            e.printStackTrace()
+            assert(false) { "file create failed" }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            assert(false) { "file create failed" }
         }
     }
 
     @After
     fun clearFiles() {
         fileUris.forEach {
-            DocumentsContract.deleteDocument(targetContext.contentResolver, it)
+            try {
+                DocumentsContract.deleteDocument(targetContext.contentResolver, it)
+            } catch (_: Exception) {
+                // is ok, e.g. uri of the deleted file
+            }
         }
     }
 
@@ -232,14 +241,22 @@ class DocumentsUiTest : UiTest() {
 
     @Test
     fun fullyQualifiedRemoved() {
-        // test initial display as well
+        val widgetView = addWidget(fileNames.lastIndex, useProviderLink = false)
+        val fileName = fileNames.last()
+        viewDocument(widgetView, fileName)
 
+        handleRemoving(fileName, useProviderLink = false, widgetView)
+        handleRestoring(fileName, widgetView, shouldBeHandled = !isEmulator())
     }
 
     @Test
     fun providerLinkRemoved() {
-        // test initial display as well
+        val widgetView = addWidget(fileNames.lastIndex, useProviderLink = true)
+        val fileName = fileNames.last()
+        viewDocument(widgetView, fileName)
 
+        handleRemoving(fileName, useProviderLink = true, widgetView)
+        handleRestoring(fileName, widgetView, shouldBeHandled = !isEmulator())
     }
 
     @Test
@@ -409,12 +426,30 @@ class DocumentsUiTest : UiTest() {
         // close both "Files" (crucial if is trickyApp) & viewer
         closeRecentApps()
         goHome()
+        tryToViewDocument(toFileName, widgetView, shouldBeHandled)
+    }
+
+    private fun handleRemoving(fileName: String, useProviderLink: Boolean, widgetView: UiObject2) {
+        openFilesApp()
+        removeFile(fileName, useProviderLink)
+        closeRecentApps()
+        goHome()
+        tryToViewDocument(fileName, widgetView, false)
+    }
+
+    private fun handleRestoring(fileName: String, widgetView: UiObject2, shouldBeHandled: Boolean) {
+        createFile(fileName)
+        goHome()
+        tryToViewDocument(fileName, widgetView, shouldBeHandled)
+    }
+
+    private fun tryToViewDocument(fileName: String, widgetView: UiObject2, shouldBeHandled: Boolean) {
         val widgetFileLabel = widgetView.findObject(By.clazz(TextView::class.java))
         if (shouldBeHandled) {
-            viewDocument(widgetView, toFileName)
+            viewDocument(widgetView, fileName)
             goHome()
             device.waitForIdle()
-            assertEquals(toFileName, widgetFileLabel.text)
+            assertEquals(fileName, widgetFileLabel.text)
             assertEquals(targetContext.getString(R.string.appwidget_text), widgetFileLabel.contentDescription)
         } else {
             widgetView.click()
@@ -462,6 +497,23 @@ class DocumentsUiTest : UiTest() {
         assertNotNull(button)
         button.click()
         device.wait(Until.hasObject(By.text("File renamed")), ACTION_TIMEOUT)
+    }
+
+    private fun removeFile(fileName: String, useProviderLink: Boolean) {
+        val (fileLabel, trickyApp) = filesAppNavigateToTestDocument(fileName, useProviderLink)
+        if (trickyApp) {
+            val longPressSteps = 100
+            device.swipe(arrayOf(fileLabel.visibleCenter, fileLabel.visibleCenter), longPressSteps)
+        } else
+            fileLabel.longClick()
+
+        clickLabel(By.descContains("Delete"))
+        val textPattern = Pattern.compile(targetContext.getString(android.R.string.ok), Pattern.CASE_INSENSITIVE)
+        val button = device.wait(Until.findObject(By.text(textPattern).clazz(Button::class.java)), ACTION_TIMEOUT) ?:
+            device.wait(Until.findObject(By.text("Delete").clazz(Button::class.java)), ACTION_TIMEOUT)
+        assertNotNull(button)
+        button.click()
+        device.wait(Until.hasObject(By.text("File removed")), ACTION_TIMEOUT)
     }
 
     private fun closeRecentApps() {
