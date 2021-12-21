@@ -305,71 +305,6 @@ class DocumentsUiTest : UiTest() {
         return widgetView!!
     }
 
-    private fun filesAppNavigateToTestDocument(fileName: String, useProviderLink: Boolean): Pair<UiObject2, Boolean> {
-        if (device.wait(Until.hasObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT)) {
-            return filePickerNavigateToTestDocument(fileName, useProviderLink) to false
-        }
-
-        clickLabel(By.text("Browse"))
-        if (useProviderLink) {
-            clickLabel(By.text("Downloads"))
-        } else {
-            val internalStorage = scrollDownTo(By.text("Internal storage"))
-            assertNotNull(internalStorage)
-            internalStorage!!.click()
-            clickLabel(By.text("Download"))
-        }
-        val fileLabel = device.wait(Until.findObject(By.text(fileName).clazz(TextView::class.java)), ACTION_TIMEOUT)
-        assertNotNull(fileLabel)
-        return fileLabel to true
-    }
-
-    private fun filePickerNavigateToTestDocument(fileName: String, useProviderLink: Boolean): UiObject2 {
-        // open downloads
-        val rootsButton =
-            device.wait(Until.findObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT)
-        assertNotNull(rootsButton)
-        rootsButton.click()
-        if (useProviderLink) {
-            clickLabel(By.text("Downloads").res("android", "title"))
-        } else {
-            var internalStorageLabel = device.wait(Until.findObject(By.text(Build.MODEL)), ACTION_TIMEOUT)
-            if (isEmulator() && internalStorageLabel == null) {
-                clickMoreOptions()
-                clickMoreOptions()
-                clickLabel(By.text("Show internal storage"))
-                rootsButton.click()
-                internalStorageLabel = device.wait(Until.findObject(By.text(Build.MODEL)), ACTION_TIMEOUT)
-            }
-            assertNotNull(internalStorageLabel)
-            internalStorageLabel.click()
-
-            val downloadFolder = scrollDownTo(By.text("Download"))
-            assertNotNull(downloadFolder)
-            downloadFolder!!.click()
-        }
-        val fileLabel = scrollDownTo(By.text(fileName).clazz(TextView::class.java))
-        assertNotNull(fileLabel)
-        return fileLabel!!
-    }
-
-    private fun clickLabel(bySelector: BySelector) {
-        val label = device.wait(Until.findObject(bySelector.clazz(TextView::class.java)), ACTION_TIMEOUT)
-        assertNotNull(label)
-        label.click()
-    }
-
-    private fun scrollDownTo(bySelector: BySelector): UiObject2? {
-        var obj = device.findObject(bySelector)
-        val startTime = SystemClock.uptimeMillis()
-        val swipeSteps = 100
-        while (obj == null && SystemClock.uptimeMillis() - startTime < 30000) {
-            device.swipe(device.displayWidth / 2, 3 * device.displayHeight / 4, device.displayWidth / 2, 0, swipeSteps)
-            obj = device.findObject(bySelector)
-        }
-        return obj
-    }
-
     private fun getAddedWidget(fileName: String, withDescription: Boolean = true): UiObject2? {
         val addedWidgets = device.wait(Until.findObjects(By.desc(widgetLabel)), ACTION_TIMEOUT)
         assertNotEquals(0, addedWidgets.size)
@@ -403,6 +338,24 @@ class DocumentsUiTest : UiTest() {
         }
     }
 
+    private fun tryToViewDocument(fileName: String, widgetView: UiObject2, shouldBeHandled: Boolean) {
+        val widgetFileLabel = widgetView.findObject(By.clazz(TextView::class.java))
+        if (shouldBeHandled) {
+            viewDocument(widgetView, fileName)
+            goHome()
+            device.waitForIdle()
+            assertEquals(fileName, widgetFileLabel.text)
+            assertEquals(targetContext.getString(R.string.appwidget_text), widgetFileLabel.contentDescription)
+        } else {
+            widgetView.click()
+            // unable to catch Toast, just make sure document is not opened
+            // also can be tried to view in another app (e.g. Contacts), also needs back or home then
+            verifyUnableToViewDocument()
+            goHome()
+            assertEquals(targetContext.getString(R.string.appwidget_invalid_text), widgetFileLabel.contentDescription)
+        }
+    }
+
     private fun verifyUnableToViewDocument() {
         var viewerApp = ""
         for (app in viewerApps) {
@@ -412,12 +365,6 @@ class DocumentsUiTest : UiTest() {
             }
         }
         assertEquals("", viewerApp)
-    }
-
-    private fun clickMoreOptions() {
-        val image = device.wait(Until.findObject(By.clazz(ImageView::class.java).desc("More options")), ACTION_TIMEOUT)
-        assertNotNull(image)
-        image.click()
     }
 
     private fun handleRenaming(fromFileName: String, toFileName:String, useProviderLink: Boolean, widgetView: UiObject2, shouldBeHandled: Boolean) {
@@ -443,22 +390,52 @@ class DocumentsUiTest : UiTest() {
         tryToViewDocument(fileName, widgetView, shouldBeHandled)
     }
 
-    private fun tryToViewDocument(fileName: String, widgetView: UiObject2, shouldBeHandled: Boolean) {
-        val widgetFileLabel = widgetView.findObject(By.clazz(TextView::class.java))
-        if (shouldBeHandled) {
-            viewDocument(widgetView, fileName)
-            goHome()
-            device.waitForIdle()
-            assertEquals(fileName, widgetFileLabel.text)
-            assertEquals(targetContext.getString(R.string.appwidget_text), widgetFileLabel.contentDescription)
+    private fun filePickerNavigateToTestDocument(fileName: String, useProviderLink: Boolean): UiObject2 {
+        // open downloads
+        val rootsButton =
+            device.wait(Until.findObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT)
+        assertNotNull(rootsButton)
+        rootsButton.click()
+        if (useProviderLink) {
+            clickLabel(By.text("Downloads").res("android", "title"))
         } else {
-            widgetView.click()
-            // unable to catch Toast, just make sure document is not opened
-            // also can be tried to view in another app (e.g. Contacts), also needs back or home then
-            verifyUnableToViewDocument()
-            goHome()
-            assertEquals(targetContext.getString(R.string.appwidget_invalid_text), widgetFileLabel.contentDescription)
+            var internalStorageLabel = device.wait(Until.findObject(By.text(Build.MODEL)), ACTION_TIMEOUT)
+            if (isEmulator() && internalStorageLabel == null) {
+                clickMoreOptions()
+                clickMoreOptions()
+                clickLabel(By.text("Show internal storage"))
+                rootsButton.click()
+                internalStorageLabel = device.wait(Until.findObject(By.text(Build.MODEL)), ACTION_TIMEOUT)
+            }
+            assertNotNull(internalStorageLabel)
+            internalStorageLabel.click()
+
+            val downloadFolder = scrollDownTo(By.text("Download"))
+            assertNotNull(downloadFolder)
+            downloadFolder!!.click()
         }
+        val fileLabel = scrollDownTo(By.text(fileName).clazz(TextView::class.java))
+        assertNotNull(fileLabel)
+        return fileLabel!!
+    }
+
+    private fun filesAppNavigateToTestDocument(fileName: String, useProviderLink: Boolean): Pair<UiObject2, Boolean> {
+        if (device.wait(Until.hasObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT)) {
+            return filePickerNavigateToTestDocument(fileName, useProviderLink) to false
+        }
+
+        clickLabel(By.text("Browse"))
+        if (useProviderLink) {
+            clickLabel(By.text("Downloads"))
+        } else {
+            val internalStorage = scrollDownTo(By.text("Internal storage"))
+            assertNotNull(internalStorage)
+            internalStorage!!.click()
+            clickLabel(By.text("Download"))
+        }
+        val fileLabel = device.wait(Until.findObject(By.text(fileName).clazz(TextView::class.java)), ACTION_TIMEOUT)
+        assertNotNull(fileLabel)
+        return fileLabel to true
     }
 
     private fun openFilesApp() {
@@ -528,6 +505,29 @@ class DocumentsUiTest : UiTest() {
         }
         assertNotNull(clearAll)
         clearAll.click()
+    }
+
+    private fun clickLabel(bySelector: BySelector) {
+        val label = device.wait(Until.findObject(bySelector.clazz(TextView::class.java)), ACTION_TIMEOUT)
+        assertNotNull(label)
+        label.click()
+    }
+
+    private fun scrollDownTo(bySelector: BySelector): UiObject2? {
+        var obj = device.findObject(bySelector)
+        val startTime = SystemClock.uptimeMillis()
+        val swipeSteps = 100
+        while (obj == null && SystemClock.uptimeMillis() - startTime < 30000) {
+            device.swipe(device.displayWidth / 2, 3 * device.displayHeight / 4, device.displayWidth / 2, 0, swipeSteps)
+            obj = device.findObject(bySelector)
+        }
+        return obj
+    }
+
+    private fun clickMoreOptions() {
+        val image = device.wait(Until.findObject(By.clazz(ImageView::class.java).desc("More options")), ACTION_TIMEOUT)
+        assertNotNull(image)
+        image.click()
     }
 
     private fun isEmulator(): Boolean = Build.MODEL.contains("Android SDK built for x86")
