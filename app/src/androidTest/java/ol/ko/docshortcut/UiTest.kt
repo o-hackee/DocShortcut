@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Point
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.os.SystemClock
 import android.provider.DocumentsContract
 import android.widget.Button
@@ -154,7 +155,6 @@ open class DocumentsBaseTest: WidgetsBaseTest() {
         val viewerApps = listOf("com.google.android.apps.docs", "com.adobe.reader")
     }
 
-    // TODO built-in
     protected fun createFile(fileName: String, onRemovableStorage: Boolean): Uri {
         val scenario = launchActivity<TestActivity>()
         var createdFileUri: Uri? = null
@@ -357,6 +357,7 @@ class DocumentsUiTest: DocumentsBaseTest() {
 open class DocumentsAlteredBaseTest: DocumentsBaseTest() {
 
     protected fun getPlacementPoint() = Point(device.displayWidth / 6, device.displayHeight / 6)
+    protected fun getNewName(fileName: String) = "renamed_$fileName"
 
     protected fun handleRenaming(fromFileName: String, toFileName:String, useProviderLink: Boolean, fromRemovableStorage: Boolean, widgetView: UiObject2, shouldBeHandled: Boolean) {
         openFilesApp()
@@ -429,7 +430,7 @@ open class DocumentsAlteredBaseTest: DocumentsBaseTest() {
         return fileLabel to true
     }
 
-    private fun openFilesApp() {
+    protected fun openFilesApp() {
         goHome()
         val filesAppName = "Files"
         val appDrawer = UiScrollable(UiSelector().scrollable(true))
@@ -469,7 +470,7 @@ open class DocumentsAlteredBaseTest: DocumentsBaseTest() {
         assert(device.wait(Until.hasObject(By.text(newName)), ACTION_TIMEOUT))
     }
 
-    private fun removeFile(fileName: String, useProviderLink: Boolean, fromRemovableStorage: Boolean) {
+    protected fun removeFile(fileName: String, useProviderLink: Boolean, fromRemovableStorage: Boolean) {
         val (fileLabel, trickyApp) = filesAppNavigateToTestDocument(fileName, useProviderLink, fromRemovableStorage)
         if (trickyApp) {
             val longPressSteps = 100
@@ -486,7 +487,7 @@ open class DocumentsAlteredBaseTest: DocumentsBaseTest() {
         device.wait(Until.hasObject(By.textContains("delet")), ACTION_TIMEOUT)
     }
 
-    private fun closeRecentApps() {
+    protected fun closeRecentApps() {
         device.pressRecentApps()
         val clearAllSelector = By.text(Pattern.compile("Clear All", Pattern.CASE_INSENSITIVE))
         var clearAll = device.findObject(clearAllSelector)
@@ -521,10 +522,16 @@ class DocumentsAlteredTest: DocumentsAlteredBaseTest() {
                 // is ok, e.g. uri of the deleted file
             }
         }
-    }
 
-    // emulator 30
-    // fullyQualifiedRenamed: generally ok, but the file is not cleaned at the end
+        val builtInStorageFilesDir = targetContext.getExternalFilesDirs(Environment.DIRECTORY_DOWNLOADS).first().absolutePath
+        val builtInStorage = builtInStorageFilesDir.substring(0, builtInStorageFilesDir.indexOf("Android/data"))
+        val f = File(builtInStorage + Environment.DIRECTORY_DOWNLOADS, fileName)
+        if (f.exists()) {
+            openFilesApp()
+            removeFile(fileName, useProviderLink = false, fromRemovableStorage = false)
+            closeRecentApps()
+        }
+    }
 
     @Test
     fun fullyQualifiedRenamed() {
@@ -533,7 +540,7 @@ class DocumentsAlteredTest: DocumentsAlteredBaseTest() {
 
         // actually it doesn't matter how we navigate to the file to rename it, it only matters how we obtain the uri while creating,
         // but keeping the same way
-        val newName = "renamed_$fileName"
+        val newName = getNewName(fileName)
         handleRenaming(fileName, newName, useProviderLink = false, fromRemovableStorage = false, widgetView, shouldBeHandled = false)
         handleRenaming(newName, fileName, useProviderLink = false, fromRemovableStorage = false, widgetView, shouldBeHandled = !isEmulator())
     }
@@ -543,7 +550,7 @@ class DocumentsAlteredTest: DocumentsAlteredBaseTest() {
         val widgetView = addWidget(fileName, useProviderLink = true, fromRemovableStorage = false, getPlacementPoint())
         viewDocument(widgetView, fileName)
 
-        val newName = "renamed_$fileName"
+        val newName = getNewName(fileName)
         handleRenaming(fileName, newName, useProviderLink = true, fromRemovableStorage = false, widgetView, shouldBeHandled = isEmulator())
         handleRenaming(newName, fileName, useProviderLink = true, fromRemovableStorage = false, widgetView, shouldBeHandled = true)
     }
@@ -587,19 +594,24 @@ class RemovableStorageTest: DocumentsAlteredBaseTest() {
                 // is ok, e.g. uri of the deleted file
             }
         }
+
+        val removableStorageFilesDir = targetContext.getExternalFilesDirs(Environment.DIRECTORY_DOWNLOADS).last().path
+        val removableStorage = removableStorageFilesDir.substring(0, removableStorageFilesDir.indexOf("Android/data"))
+        listOf(fileName, getNewName(fileName)).forEach {
+            val f = File(removableStorage + Environment.DIRECTORY_DOWNLOADS, it)
+            if (f.exists()) {
+                openFilesApp()
+                removeFile(fileName, useProviderLink = false, fromRemovableStorage = true)
+                closeRecentApps()
+            }
+        }
     }
 
     // emulator 30
-    // fullyQualifiedRenamed: generally ok, but the file is not cleaned at the end
     // providerLinkRenamed: "failed to rename document" - actually renamed, hence not removed at the end, and still occurs by the old name in "Downloads" provider
     // emulator 29
-    // fullyQualifiedRenamed: generally ok, but the file is not cleaned at the end
     // providerLinkRenamed: can't even view the document initially
     // providerLinkRemoved: can't even view the document initially
-
-    // phone
-    // fullyQualifiedRenamed: generally ok, but the file is not cleaned at the end TOO
-    // providerLinkRenamed: generally ok, but the file is not cleaned at the end
 
     @Test
     fun fullyQualifiedRenamed() {
@@ -608,17 +620,19 @@ class RemovableStorageTest: DocumentsAlteredBaseTest() {
 
         // actually it doesn't matter how we navigate to the file to rename it, it only matters how we obtain the uri while creating,
         // but keeping the same way
-        val newName = "renamed_$fileName"
+        val newName = getNewName(fileName)
         handleRenaming(fileName, newName, useProviderLink = false, fromRemovableStorage = true, widgetView, shouldBeHandled = false)
         handleRenaming(newName, fileName, useProviderLink = false, fromRemovableStorage = true, widgetView, shouldBeHandled = false)
     }
 
     @Test
     fun providerLinkRenamed() {
+        assert(!isEmulator()) { "you have to run this test on the phone, it will fail on an emulator" }
+
         val widgetView = addWidget(fileName, useProviderLink = true, fromRemovableStorage = true, getPlacementPoint())
         viewDocument(widgetView, fileName)
 
-        val newName = "renamed_$fileName"
+        val newName = getNewName(fileName)
         handleRenaming(fileName, newName, useProviderLink = true, fromRemovableStorage = true, widgetView, shouldBeHandled = false)
         handleRenaming(newName, fileName, useProviderLink = true, fromRemovableStorage = true, widgetView, shouldBeHandled = isEmulator())
     }
@@ -629,11 +643,15 @@ class RemovableStorageTest: DocumentsAlteredBaseTest() {
         viewDocument(widgetView, fileName)
 
         handleRemoving(fileName, useProviderLink = false, fromRemovableStorage = true, widgetView)
-        handleRestoring(fileName, widgetView, shouldBeHandled = true, fileUris)
+        handleRestoring(fileName, widgetView, shouldBeHandled = false, fileUris)
     }
 
     @Test
     fun providerLinkRemoved() {
+        assert(!isEmulator() || Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            "you have to run this test either on the phone or on an emulator with SDK 30"
+        }
+
         val widgetView = addWidget(fileName, useProviderLink = true, fromRemovableStorage = true, getPlacementPoint())
         viewDocument(widgetView, fileName)
 
