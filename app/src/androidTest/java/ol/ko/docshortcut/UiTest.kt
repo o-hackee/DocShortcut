@@ -148,18 +148,13 @@ class UiTest: WidgetsBaseTest() {
     }
 }
 
-open class DocumentsBaseTest: WidgetsBaseTest() {
+open class FilesBaseTest: WidgetsBaseTest() {
 
-    companion object {
-        const val testDataFolderName = "testdata"
-        val viewerApps = listOf("com.google.android.apps.docs", "com.adobe.reader")
-    }
-
-    protected fun createFile(fileName: String, onRemovableStorage: Boolean): Uri {
+    protected fun createFile(fileName: String, testDataFolderName: String, fileType: String, targetFolderLink: String, targetFolderName: String, onRemovableStorage: Boolean): Uri {
         val scenario = launchActivity<TestActivity>()
         var createdFileUri: Uri? = null
         scenario.onActivity {
-            it.launchDocumentCreator(fileName) { obtainedUri -> createdFileUri = obtainedUri }
+            it.launchDocumentCreator(fileName, fileType) { obtainedUri -> createdFileUri = obtainedUri }
         }
         val rootsButton =
             device.wait(Until.findObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT)
@@ -169,9 +164,9 @@ open class DocumentsBaseTest: WidgetsBaseTest() {
             addDelay()
         if (onRemovableStorage) {
             clickLabel(By.textContains(sdCardLabelName()).res("android", "title"))
-            clickLabel(By.text("Download"))
+            clickLabel(By.text(targetFolderName))
         } else {
-            clickLabel(By.text("Downloads").res("android", "title"))
+            clickLabel(By.text(targetFolderLink).res("android", "title"))
         }
         val saveButton =
             device.wait(Until.findObject(By.text(Pattern.compile("Save", Pattern.CASE_INSENSITIVE))), ACTION_TIMEOUT)
@@ -199,7 +194,7 @@ open class DocumentsBaseTest: WidgetsBaseTest() {
         return createdFileUri!!
     }
 
-    protected fun addWidget(fileName: String, useProviderLink: Boolean, fromRemovableStorage: Boolean, placementPoint: Point): UiObject2 {
+    protected fun addWidget(fileName: String, targetFolderLink: String, targetFolderName: String, useProviderLink: Boolean, fromRemovableStorage: Boolean, placementPoint: Point): UiObject2 {
         goHome()
         val widgetType = findWidgetInSelector()
 
@@ -214,7 +209,7 @@ open class DocumentsBaseTest: WidgetsBaseTest() {
         assertNotNull(button)
         button.click()
 
-        filePickerNavigateToTestDocument(fileName, useProviderLink, fromRemovableStorage).click()
+        filePickerNavigateToTestDocument(fileName, targetFolderLink, targetFolderName, useProviderLink, fromRemovableStorage).click()
         val widgetView = getAddedWidget(fileName)
         assertNotNull(widgetView)
         return widgetView!!
@@ -230,6 +225,103 @@ open class DocumentsBaseTest: WidgetsBaseTest() {
             }
             it.hasObject(selector)
         }
+    }
+
+    protected fun filePickerNavigateToTestDocument(fileName: String, targetFolderLink: String, targetFolderName: String, useProviderLink: Boolean, fromRemovableStorage: Boolean): UiObject2 {
+        // open downloads
+        val rootsButtonCondition = Until.findObject(By.desc("Show roots").clazz(ImageButton::class.java))
+        val rootsButton = device.wait(rootsButtonCondition, ACTION_TIMEOUT)
+        assertNotNull(rootsButton)
+        rootsButton.click()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
+            addDelay()
+        if (useProviderLink) {
+            clickLabel(By.text(targetFolderLink).res("android", "title"))
+        } else {
+            var storageLabel: UiObject2?
+            if (fromRemovableStorage) {
+                storageLabel = device.wait(Until.findObject(By.textContains(sdCardLabelName()).res("android", "title")), ACTION_TIMEOUT)
+            } else {
+                storageLabel = device.wait(Until.findObject(By.text(Build.MODEL).res("android", "title")), ACTION_TIMEOUT)
+                if (isEmulator() && storageLabel == null) {
+                    clickMoreOptions()
+                    clickMoreOptions()
+                    clickLabel(By.text("Show internal storage"))
+                    device.wait(rootsButtonCondition, ACTION_TIMEOUT)
+                    rootsButton.click()
+                    storageLabel = device.wait(Until.findObject(By.text(Build.MODEL).res("android", "title")), ACTION_TIMEOUT)
+                }
+            }
+            assertNotNull(storageLabel)
+            storageLabel.click()
+
+            val downloadFolder = scrollDownTo(By.text(targetFolderName))
+            assertNotNull(downloadFolder)
+            downloadFolder!!.click()
+        }
+        val fileLabel = scrollDownTo(By.text(fileName).clazz(TextView::class.java))
+        assertNotNull(fileLabel)
+        return fileLabel!!
+    }
+
+    protected fun getSingleWidgetPlacementPoint() = Point(device.displayWidth / 6, device.displayHeight / 6)
+
+    protected fun clickLabel(bySelector: BySelector) {
+        val label = device.wait(Until.findObject(bySelector.clazz(TextView::class.java)), ACTION_TIMEOUT)
+        assertNotNull(label)
+        label.click()
+    }
+
+    protected fun clickImage(bySelector: BySelector) {
+        val image = device.wait(Until.findObject(bySelector.clazz(ImageView::class.java)), ACTION_TIMEOUT)
+        assertNotNull(image)
+        image.click()
+    }
+
+    protected fun scrollDownTo(bySelector: BySelector): UiObject2? {
+        var obj = device.findObject(bySelector)
+        val startTime = SystemClock.uptimeMillis()
+        val swipeSteps = 100
+        while (obj == null && SystemClock.uptimeMillis() - startTime < 30000) {
+            device.swipe(device.displayWidth / 2, 3 * device.displayHeight / 4, device.displayWidth / 2, 0, swipeSteps)
+            obj = device.findObject(bySelector)
+        }
+        return obj
+    }
+
+    protected fun clickMoreOptions() {
+        clickImage(By.desc("More options"))
+    }
+
+    protected fun closeRecentApps() {
+        device.pressRecentApps()
+        val clearAllSelector = By.text(Pattern.compile("Clear All", Pattern.CASE_INSENSITIVE))
+        var clearAll = device.findObject(clearAllSelector)
+        val startTime = SystemClock.uptimeMillis()
+        val swipeSteps = 100
+        while (clearAll == null && SystemClock.uptimeMillis() - startTime < 30000) {
+            device.swipe(0, device.displayHeight / 2, device.displayWidth, device.displayHeight / 2, swipeSteps)
+            clearAll = device.findObject(clearAllSelector)
+        }
+        assertNotNull(clearAll)
+        clearAll.click()
+    }
+
+    private fun addDelay() = device.wait(Until.findObject(By.text("non-existing object")), ACTION_TIMEOUT / 2)
+
+    protected fun isEmulator(): Boolean = Build.MODEL.equals("Android SDK built for x86") or Build.MODEL.equals("sdk_gphone_x86")
+
+    protected fun sdCardLabelName() = if (isEmulator()) "SDCARD" else "SD card"
+}
+
+open class DocumentsBaseTest: FilesBaseTest() {
+
+    companion object {
+        const val testDataFolderName = "testdocs"
+        const val fileType = "application/pdf"
+        const val targetFolderLink = "Downloads"
+        const val targetFolderName = "Download"
+        val viewerApps = listOf("com.google.android.apps.docs", "com.adobe.reader")
     }
 
     protected fun viewDocument(widgetView: UiObject2, fileName: String) {
@@ -252,74 +344,6 @@ open class DocumentsBaseTest: WidgetsBaseTest() {
             }
         }
     }
-
-    protected fun filePickerNavigateToTestDocument(fileName: String, useProviderLink: Boolean, fromRemovableStorage: Boolean): UiObject2 {
-        // open downloads
-        val rootsButtonCondition = Until.findObject(By.desc("Show roots").clazz(ImageButton::class.java))
-        val rootsButton = device.wait(rootsButtonCondition, ACTION_TIMEOUT)
-        assertNotNull(rootsButton)
-        rootsButton.click()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-            addDelay()
-        if (useProviderLink) {
-            clickLabel(By.text("Downloads").res("android", "title"))
-        } else {
-            var storageLabel: UiObject2?
-            if (fromRemovableStorage) {
-                storageLabel = device.wait(Until.findObject(By.textContains(sdCardLabelName()).res("android", "title")), ACTION_TIMEOUT)
-            } else {
-                storageLabel = device.wait(Until.findObject(By.text(Build.MODEL).res("android", "title")), ACTION_TIMEOUT)
-                if (isEmulator() && storageLabel == null) {
-                    clickMoreOptions()
-                    clickMoreOptions()
-                    clickLabel(By.text("Show internal storage"))
-                    device.wait(rootsButtonCondition, ACTION_TIMEOUT)
-                    rootsButton.click()
-                    storageLabel = device.wait(Until.findObject(By.text(Build.MODEL).res("android", "title")), ACTION_TIMEOUT)
-                }
-            }
-            assertNotNull(storageLabel)
-            storageLabel.click()
-
-            val downloadFolder = scrollDownTo(By.text("Download"))
-            assertNotNull(downloadFolder)
-            downloadFolder!!.click()
-        }
-        val fileLabel = scrollDownTo(By.text(fileName).clazz(TextView::class.java))
-        assertNotNull(fileLabel)
-        return fileLabel!!
-    }
-
-    protected fun clickLabel(bySelector: BySelector) {
-        val label = device.wait(Until.findObject(bySelector.clazz(TextView::class.java)), ACTION_TIMEOUT)
-        assertNotNull(label)
-        label.click()
-    }
-
-    protected fun scrollDownTo(bySelector: BySelector): UiObject2? {
-        var obj = device.findObject(bySelector)
-        val startTime = SystemClock.uptimeMillis()
-        val swipeSteps = 100
-        while (obj == null && SystemClock.uptimeMillis() - startTime < 30000) {
-            device.swipe(device.displayWidth / 2, 3 * device.displayHeight / 4, device.displayWidth / 2, 0, swipeSteps)
-            obj = device.findObject(bySelector)
-        }
-        return obj
-    }
-
-    protected fun clickMoreOptions() {
-        val image = device.wait(Until.findObject(By.clazz(ImageView::class.java).desc("More options")), ACTION_TIMEOUT)
-        assertNotNull(image)
-        image.click()
-    }
-
-    private fun addDelay() {
-        device.wait(Until.findObject(By.text("non-existing object")), ACTION_TIMEOUT / 2)
-    }
-
-    protected fun sdCardLabelName() = if (isEmulator()) "SDCARD" else "SD card"
-
-    protected fun isEmulator(): Boolean = Build.MODEL.equals("Android SDK built for x86") or Build.MODEL.equals("sdk_gphone_x86")
 }
 
 @RunWith(AndroidJUnit4::class)
@@ -333,7 +357,7 @@ class DocumentsUiTest: DocumentsBaseTest() {
         fileNames = InstrumentationRegistry.getInstrumentation().context.resources.assets.list(testDataFolderName) ?: arrayOf()
 
         fileNames.forEach { fileName ->
-            fileUris.add(createFile(fileName, onRemovableStorage = false))
+            fileUris.add(createFile(fileName, testDataFolderName, fileType, targetFolderLink, targetFolderName, onRemovableStorage = false))
         }
     }
 
@@ -348,7 +372,7 @@ class DocumentsUiTest: DocumentsBaseTest() {
     fun addMultipleWidgets() {
         val widgetViews = fileNames.mapIndexed { idx, fileName ->
             val placementPoint = Point(device.displayWidth / 6, device.displayHeight * (2 * idx + 1) / 4 / fileNames.count())
-            addWidget(fileName, useProviderLink = true, fromRemovableStorage = false, placementPoint)
+            addWidget(fileName, targetFolderLink, targetFolderName, useProviderLink = true, fromRemovableStorage = false, placementPoint)
         }
         widgetViews.forEachIndexed { idx, widgetView -> viewDocument(widgetView, fileNames[idx]) }
     }
@@ -356,7 +380,6 @@ class DocumentsUiTest: DocumentsBaseTest() {
 
 open class DocumentsAlteredBaseTest: DocumentsBaseTest() {
 
-    protected fun getPlacementPoint() = Point(device.displayWidth / 6, device.displayHeight / 6)
     protected fun getNewName(fileName: String) = "renamed_$fileName"
 
     protected fun handleRenaming(fromFileName: String, toFileName:String, useProviderLink: Boolean, fromRemovableStorage: Boolean, widgetView: UiObject2, shouldBeHandled: Boolean) {
@@ -377,7 +400,7 @@ open class DocumentsAlteredBaseTest: DocumentsBaseTest() {
     }
 
     protected fun handleRestoring(fileName: String, widgetView: UiObject2, shouldBeHandled: Boolean, fileUris: MutableList<Uri>) {
-        fileUris.add(createFile(fileName, onRemovableStorage = false))
+        fileUris.add(createFile(fileName, testDataFolderName, fileType, targetFolderLink, targetFolderName, onRemovableStorage = false))
         goHome()
         tryToViewDocument(fileName, widgetView, shouldBeHandled)
     }
@@ -413,17 +436,17 @@ open class DocumentsAlteredBaseTest: DocumentsBaseTest() {
 
     private fun filesAppNavigateToTestDocument(fileName: String, useProviderLink: Boolean, fromRemovableStorage: Boolean): Pair<UiObject2, Boolean> {
         if (device.wait(Until.hasObject(By.desc("Show roots").clazz(ImageButton::class.java)), ACTION_TIMEOUT)) {
-            return filePickerNavigateToTestDocument(fileName, useProviderLink, fromRemovableStorage) to false
+            return filePickerNavigateToTestDocument(fileName, targetFolderLink, targetFolderName, useProviderLink, fromRemovableStorage) to false
         }
 
         clickLabel(By.text("Browse"))
         if (useProviderLink) {
-            clickLabel(By.text("Downloads"))
+            clickLabel(By.text(targetFolderLink))
         } else {
             val storageLabel = scrollDownTo(By.text(if (fromRemovableStorage) sdCardLabelName() else "Internal storage"))
             assertNotNull(storageLabel)
             storageLabel!!.click()
-            clickLabel(By.text("Download"))
+            clickLabel(By.text(targetFolderName))
         }
         val fileLabel = device.wait(Until.findObject(By.text(fileName).clazz(TextView::class.java)), ACTION_TIMEOUT)
         assertNotNull(fileLabel)
@@ -486,20 +509,6 @@ open class DocumentsAlteredBaseTest: DocumentsBaseTest() {
         button.click()
         device.wait(Until.hasObject(By.textContains("delet")), ACTION_TIMEOUT)
     }
-
-    protected fun closeRecentApps() {
-        device.pressRecentApps()
-        val clearAllSelector = By.text(Pattern.compile("Clear All", Pattern.CASE_INSENSITIVE))
-        var clearAll = device.findObject(clearAllSelector)
-        val startTime = SystemClock.uptimeMillis()
-        val swipeSteps = 100
-        while (clearAll == null && SystemClock.uptimeMillis() - startTime < 30000) {
-            device.swipe(0, device.displayHeight / 2, device.displayWidth, device.displayHeight / 2, swipeSteps)
-            clearAll = device.findObject(clearAllSelector)
-        }
-        assertNotNull(clearAll)
-        clearAll.click()
-    }
 }
 
 @RunWith(AndroidJUnit4::class)
@@ -510,7 +519,7 @@ class DocumentsAlteredTest: DocumentsAlteredBaseTest() {
     @Before
     fun prepareFile() {
         fileName = InstrumentationRegistry.getInstrumentation().context.resources.assets.list(testDataFolderName)?.first() ?: ""
-        fileUris.add(createFile(fileName, onRemovableStorage = false))
+        fileUris.add(createFile(fileName, testDataFolderName, fileType, targetFolderLink, targetFolderName, onRemovableStorage = false))
     }
 
     @After
@@ -535,7 +544,7 @@ class DocumentsAlteredTest: DocumentsAlteredBaseTest() {
 
     @Test
     fun fullyQualifiedRenamed() {
-        val widgetView = addWidget(fileName, useProviderLink = false, fromRemovableStorage = false, getPlacementPoint())
+        val widgetView = addWidget(fileName, targetFolderLink, targetFolderName, useProviderLink = false, fromRemovableStorage = false, getSingleWidgetPlacementPoint())
         viewDocument(widgetView, fileName)
 
         // actually it doesn't matter how we navigate to the file to rename it, it only matters how we obtain the uri while creating,
@@ -547,7 +556,7 @@ class DocumentsAlteredTest: DocumentsAlteredBaseTest() {
 
     @Test
     fun providerLinkRenamed() {
-        val widgetView = addWidget(fileName, useProviderLink = true, fromRemovableStorage = false, getPlacementPoint())
+        val widgetView = addWidget(fileName, targetFolderLink, targetFolderName, useProviderLink = true, fromRemovableStorage = false, getSingleWidgetPlacementPoint())
         viewDocument(widgetView, fileName)
 
         val newName = getNewName(fileName)
@@ -557,7 +566,7 @@ class DocumentsAlteredTest: DocumentsAlteredBaseTest() {
 
     @Test
     fun fullyQualifiedRemoved() {
-        val widgetView = addWidget(fileName, useProviderLink = false, fromRemovableStorage = false, getPlacementPoint())
+        val widgetView = addWidget(fileName, targetFolderLink, targetFolderName, useProviderLink = false, fromRemovableStorage = false, getSingleWidgetPlacementPoint())
         viewDocument(widgetView, fileName)
 
         handleRemoving(fileName, useProviderLink = false, fromRemovableStorage = false, widgetView)
@@ -566,7 +575,7 @@ class DocumentsAlteredTest: DocumentsAlteredBaseTest() {
 
     @Test
     fun providerLinkRemoved() {
-        val widgetView = addWidget(fileName, useProviderLink = true, fromRemovableStorage = false, getPlacementPoint())
+        val widgetView = addWidget(fileName, targetFolderLink, targetFolderName, useProviderLink = true, fromRemovableStorage = false, getSingleWidgetPlacementPoint())
         viewDocument(widgetView, fileName)
 
         handleRemoving(fileName, useProviderLink = true, fromRemovableStorage = false, widgetView)
@@ -582,7 +591,7 @@ class RemovableStorageTest: DocumentsAlteredBaseTest() {
     @Before
     fun prepareFile() {
         fileName = InstrumentationRegistry.getInstrumentation().context.resources.assets.list(testDataFolderName)?.first() ?: ""
-        fileUris.add(createFile(fileName, onRemovableStorage = true))
+        fileUris.add(createFile(fileName, testDataFolderName, fileType, targetFolderLink, targetFolderName, onRemovableStorage = true))
     }
 
     @After
@@ -615,7 +624,7 @@ class RemovableStorageTest: DocumentsAlteredBaseTest() {
 
     @Test
     fun fullyQualifiedRenamed() {
-        val widgetView = addWidget(fileName, useProviderLink = false, fromRemovableStorage = true, getPlacementPoint())
+        val widgetView = addWidget(fileName, targetFolderLink, targetFolderName, useProviderLink = false, fromRemovableStorage = true, getSingleWidgetPlacementPoint())
         viewDocument(widgetView, fileName)
 
         // actually it doesn't matter how we navigate to the file to rename it, it only matters how we obtain the uri while creating,
@@ -629,7 +638,7 @@ class RemovableStorageTest: DocumentsAlteredBaseTest() {
     fun providerLinkRenamed() {
         assert(!isEmulator()) { "you have to run this test on the phone, it will fail on an emulator" }
 
-        val widgetView = addWidget(fileName, useProviderLink = true, fromRemovableStorage = true, getPlacementPoint())
+        val widgetView = addWidget(fileName, targetFolderLink, targetFolderName, useProviderLink = true, fromRemovableStorage = true, getSingleWidgetPlacementPoint())
         viewDocument(widgetView, fileName)
 
         val newName = getNewName(fileName)
@@ -639,7 +648,7 @@ class RemovableStorageTest: DocumentsAlteredBaseTest() {
 
     @Test
     fun fullyQualifiedRemoved() {
-        val widgetView = addWidget(fileName, useProviderLink = false, fromRemovableStorage = true, getPlacementPoint())
+        val widgetView = addWidget(fileName, targetFolderLink, targetFolderName, useProviderLink = false, fromRemovableStorage = true, getSingleWidgetPlacementPoint())
         viewDocument(widgetView, fileName)
 
         handleRemoving(fileName, useProviderLink = false, fromRemovableStorage = true, widgetView)
@@ -652,7 +661,7 @@ class RemovableStorageTest: DocumentsAlteredBaseTest() {
             "you have to run this test either on the phone or on an emulator with SDK 30"
         }
 
-        val widgetView = addWidget(fileName, useProviderLink = true, fromRemovableStorage = true, getPlacementPoint())
+        val widgetView = addWidget(fileName, targetFolderLink, targetFolderName, useProviderLink = true, fromRemovableStorage = true, getSingleWidgetPlacementPoint())
         viewDocument(widgetView, fileName)
 
         handleRemoving(fileName, useProviderLink = true, fromRemovableStorage = true, widgetView)
@@ -660,21 +669,67 @@ class RemovableStorageTest: DocumentsAlteredBaseTest() {
     }
 }
 
+// note: it's quite unnatural, the uris for media would be
+// content://com.android.externalstorage.documents/document/0FF1-1E14%3APictures%2Fsample_photo.jpg
+// content://com.android.externalstorage.documents/document/0FF1-1E14%3AMusic%2Fsample_audio.mp3
+// but that's how the app works
 @RunWith(AndroidJUnit4::class)
-class MediaTest {
-    @Test
-    fun fullyQualifiedMedia() {
-        // photo
+class MediaTest : FilesBaseTest() {
 
-        // music
+    private val testDataFolderName = "testmedia"
+    private val sampleImageFileName = "sample_photo.jpg"
+    private val sampleAudioFileName = "sample_audio.mp3"
+    private val targetImageFolderLink = "Images"
+    private val targetImageFolderName = "Pictures"
+    private val targetAudioFolderLink = "Audio"
+    private val targetAudioFolderName = "Music"
+    private val fileUris = mutableListOf<Uri>()
+    private val photoViewerApps = listOf("com.google.android.apps.photos", "com.google.android.apps.nbu.files")
+    private val audioApps = listOf("com.google.android.music", "com.google.android.apps.nbu.files", "com.google.android.apps.youtube.music")
 
+    @Before
+    fun prepareFiles() {
+        fileUris.add(createFile(sampleImageFileName, testDataFolderName,  "image/jpeg", targetImageFolderLink, targetImageFolderName, onRemovableStorage = true))
+        fileUris.add(createFile(sampleAudioFileName, testDataFolderName, "audio/mpeg", targetAudioFolderLink, targetAudioFolderName, onRemovableStorage = true))
+    }
+
+    @After
+    fun clearFiles() {
+        fileUris.forEach {
+            DocumentsContract.deleteDocument(targetContext.contentResolver, it)
+        }
     }
 
     @Test
-    fun providerLinkMedia() {
+    fun fullyQualifiedMedia() {
         // photo
+        val widgetViewPhoto = addWidget(sampleImageFileName, targetImageFolderLink, targetImageFolderName, useProviderLink = false, fromRemovableStorage = true, getSingleWidgetPlacementPoint())
+        when(viewMedia(widgetViewPhoto, photoViewerApps)) {
+            photoViewerApps[0] -> if (isEmulator() && Build.VERSION.SDK_INT < Build.VERSION_CODES.R)
+                    clickImage(By.desc("Info"))
+                else
+                    clickMoreOptions()
+            photoViewerApps[1] -> clickImage(By.desc("File info"))
+        }
+        assert(device.wait(Until.hasObject(By.textContains(sampleImageFileName)), ACTION_TIMEOUT))
 
-        // music
+        // audio
+        val widgetViewMedia = addWidget(sampleAudioFileName, targetAudioFolderLink, targetAudioFolderName, useProviderLink = false, fromRemovableStorage = true, getSingleWidgetPlacementPoint())
+        viewMedia(widgetViewMedia, audioApps)
+        closeRecentApps()
+    }
 
+    private fun viewMedia(widgetView: UiObject2, viewerApps: List<String>): String {
+        goHome()
+        widgetView.click()
+        var viewerApp = ""
+        for (app in viewerApps) {
+            if (device.wait(Until.hasObject(By.pkg(app)), ACTION_TIMEOUT)) {
+                viewerApp = app
+                break
+            }
+        }
+        assertNotEquals("", viewerApp)
+        return viewerApp
     }
 }
