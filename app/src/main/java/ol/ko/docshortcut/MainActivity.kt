@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Document $fileUriString not found", Toast.LENGTH_LONG).show()
         } catch (ex: SecurityException) {
             Log.e(TAG, "$fileUriString: security exception", ex)
-            Toast.makeText(this, "permissions probably have to be re-granted, please recreate the widget for $fileUriString", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Document $fileUriString might have been altered, please recreate the widget", Toast.LENGTH_LONG).show()
         } catch (ex: Exception) {
             Log.e(TAG, "$fileUriString: another exception", ex)
             Toast.makeText(this, "An error occurred while trying to open $fileUriString", Toast.LENGTH_LONG).show()
