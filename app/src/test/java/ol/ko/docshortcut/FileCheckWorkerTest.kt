@@ -17,6 +17,9 @@ import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import ol.ko.docshortcut.utils.ContentResolverUtils
+import ol.ko.docshortcut.utils.FileUrisRepository
+import ol.ko.docshortcut.work.FileCheckWorker
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before

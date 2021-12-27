@@ -9,4 +9,11 @@
     <string name="unknown_document">Unknown document</string>
     <string name="close_main">Close</string>
     <string name="updating">Updating your widgets…</string>
+    <string name="about">About</string>
+    <string name="about_text">Minimalistic utility to create documents shortcuts as app widgets\
+        \
+        \
+        If you have any questions or would like to report a bug please send your feedback to:\
+            korotkovaov@gmail.com
+</string>
 </resources>

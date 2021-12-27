@@ -1,4 +1,4 @@
-package ol.ko.docshortcut
+package ol.ko.docshortcut.utils
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -9,7 +9,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import ol.ko.docshortcut.FileUrisRepository.Companion.INVALID_MARK
+import ol.ko.docshortcut.utils.FileUrisRepository.Companion.INVALID_MARK
 
 data class SavedUriString(
     val uriString: String,

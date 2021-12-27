@@ -1,4 +1,4 @@
-package ol.ko.docshortcut
+package ol.ko.docshortcut.ui
 
 import android.appwidget.AppWidgetManager
 import android.content.ActivityNotFoundException
@@ -11,7 +11,11 @@ import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import ol.ko.docshortcut.R
+import ol.ko.docshortcut.ShortcutAppWidget
 import ol.ko.docshortcut.databinding.ActivityFilePickerBinding
+import ol.ko.docshortcut.utils.FileUrisDataStore
+import ol.ko.docshortcut.utils.FileUrisRepository
 
 class FilePickerActivity : AppCompatActivity() {
 

@@ -12,6 +12,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import ol.ko.docshortcut.ui.MainActivity
+import ol.ko.docshortcut.utils.ContentResolverUtils
+import ol.ko.docshortcut.utils.FileUrisDataStore
+import ol.ko.docshortcut.utils.FileUrisRepository
+import ol.ko.docshortcut.work.FileCheckWorker
 
 /**
  * Implementation of App Widget functionality.

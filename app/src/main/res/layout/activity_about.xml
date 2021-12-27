@@ -4,13 +4,18 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.FilePickerActivity">
+    tools:context=".ui.AboutActivity">
 
-    <Button
-        android:id="@+id/button"
-        android:layout_width="wrap_content"
+    <TextView
+        style="@style/TextAppearance.MaterialComponents.Body1"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/select_document"
+        android:layout_margin="16dp"
+        android:autoLink="all"
+        android:linksClickable="true"
+        android:text="@string/about_text"
+        android:textAlignment="center"
+        android:textSize="18sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

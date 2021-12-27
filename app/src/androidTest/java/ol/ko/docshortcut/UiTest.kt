@@ -22,6 +22,7 @@ import androidx.test.uiautomator.UiObject2
 import androidx.test.uiautomator.UiScrollable
 import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
+import ol.ko.docshortcut.utils.TestActivity
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals

@@ -1,4 +1,4 @@
-package ol.ko.docshortcut
+package ol.ko.docshortcut.work
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
@@ -9,6 +9,10 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import ol.ko.docshortcut.ShortcutAppWidget
+import ol.ko.docshortcut.utils.ContentResolverUtils
+import ol.ko.docshortcut.utils.FileUrisDataStore
+import ol.ko.docshortcut.utils.FileUrisRepository
 import java.util.concurrent.TimeUnit
 
 class FileCheckWorker(appContext: Context, workerParams: WorkerParameters) :
@@ -56,7 +60,13 @@ class FileCheckWorker(appContext: Context, workerParams: WorkerParameters) :
                     Log.d(TAG, "$appWidgetId: $isCurrentlyValid")
 //                    println("$appWidgetId: $isCurrentlyValid")
                     if (isCurrentlyValid != it.lastIsValid) {
-                        ShortcutAppWidget.updateAppWidget(applicationContext, AppWidgetManager.getInstance(applicationContext), appWidgetId, savedUriString.uriString, isCurrentlyValid)
+                        ShortcutAppWidget.updateAppWidget(
+                            applicationContext,
+                            AppWidgetManager.getInstance(applicationContext),
+                            appWidgetId,
+                            savedUriString.uriString,
+                            isCurrentlyValid
+                        )
                     }
                 }
             }

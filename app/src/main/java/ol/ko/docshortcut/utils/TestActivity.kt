@@ -1,4 +1,4 @@
-package ol.ko.docshortcut
+package ol.ko.docshortcut.utils
 
 import android.content.Context
 import android.content.Intent

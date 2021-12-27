@@ -1,4 +1,4 @@
-package ol.ko.docshortcut
+package ol.ko.docshortcut.ui
 
 import android.appwidget.AppWidgetManager
 import android.content.ActivityNotFoundException
@@ -9,7 +9,11 @@ import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
+import ol.ko.docshortcut.R
+import ol.ko.docshortcut.ShortcutAppWidget
 import ol.ko.docshortcut.databinding.ActivityMainBinding
 import java.io.FileNotFoundException
 
@@ -62,6 +66,21 @@ class MainActivity : AppCompatActivity() {
     private fun close() {
         setResult(RESULT_OK)
         finish()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.about -> {
+                startActivity(Intent(this, AboutActivity::class.java))
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
     }
 
     private fun viewDocument(fileUriString: String, appWidgetId: Int) {

@@ -16,7 +16,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
-import ol.ko.docshortcut.MainActivity
+import ol.ko.docshortcut.ui.MainActivity
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.core.AllOf.allOf
 import org.junit.After

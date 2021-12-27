@@ -13,7 +13,7 @@
     <application>
         <!--let it live here for now-->
         <activity
-            android:name="ol.ko.docshortcut.TestActivity">
+            android:name="ol.ko.docshortcut.utils.TestActivity">
         </activity>
     </application>
 

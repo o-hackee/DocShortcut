@@ -27,7 +27,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import ol.ko.docshortcut.DataStoreBaseTest
-import ol.ko.docshortcut.FilePickerActivity
+import ol.ko.docshortcut.ui.FilePickerActivity
 import ol.ko.docshortcut.R
 import org.hamcrest.core.AllOf.allOf
 import org.junit.After

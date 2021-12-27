@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.test.TestCoroutineDispatcher
+import ol.ko.docshortcut.utils.FileUrisDataStore
 import org.junit.After
 import org.junit.Before
 import java.io.File
