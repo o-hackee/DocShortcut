@@ -6,12 +6,12 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 import ol.ko.docshortcut.R
 import ol.ko.docshortcut.ShortcutAppWidget
 import ol.ko.docshortcut.databinding.ActivityMainBinding
