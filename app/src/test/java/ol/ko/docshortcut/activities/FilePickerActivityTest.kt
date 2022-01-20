@@ -46,20 +46,23 @@ class FilePickerActivityTest: DataStoreBaseTest() {
     }
 
     private lateinit var context: Context
+    private lateinit var scenario: ActivityScenario<FilePickerActivity>
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         Intents.init()
+        scenario = launchPickerActivity()
     }
 
     @After
-    fun tearDown() = Intents.release()
+    fun tearDown() {
+        scenario.close()
+        Intents.release()
+    }
 
     @Test
     fun testOpenDocumentIntent() {
-        launchPickerActivity()
-
         Espresso.onView(withId(R.id.button)).perform(click())
 
         Intents.intended(
@@ -73,8 +76,6 @@ class FilePickerActivityTest: DataStoreBaseTest() {
 
     @Test
     fun testDocumentOpenedRefresh() {
-        val scenario = launchPickerActivity()
-
         val fileUri = Uri.parse("content://com.android.providers.downloads.documents/document/msf%3A131233")
         Intents.intending(IntentMatchers.hasAction(Intent.ACTION_OPEN_DOCUMENT))
             .respondWith(Instrumentation.ActivityResult(Activity.RESULT_OK, Intent().setData(fileUri)))
@@ -108,8 +109,6 @@ class FilePickerActivityTest: DataStoreBaseTest() {
 
     @Test
     fun testDocumentOpenCanceled() {
-        val scenario = launchPickerActivity()
-
         Intents.intending(IntentMatchers.hasAction(Intent.ACTION_OPEN_DOCUMENT))
             .respondWith(Instrumentation.ActivityResult(Activity.RESULT_CANCELED, null))
 

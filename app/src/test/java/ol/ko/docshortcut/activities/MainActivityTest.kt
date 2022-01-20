@@ -74,6 +74,7 @@ class MainActivityTest {
         // also make sure the widget is being refreshed (e.g. if the URI is for some reason invalid, the user would
         // expect to the the error indication in the widget UI as well after unsuccessful document view)
         checkBroadcastIntents(IntArray(1) { APPWIDGET_ID })
+        scenario.close()
     }
 
     @Test
@@ -85,6 +86,7 @@ class MainActivityTest {
         assertEquals(Lifecycle.State.RESUMED, scenario.state)
 
         checkBroadcastIntents(appWidgetIds)
+        scenario.close()
     }
 
     private fun checkBroadcastIntents(appWidgetIds: IntArray) {

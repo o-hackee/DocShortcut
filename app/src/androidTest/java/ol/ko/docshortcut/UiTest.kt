@@ -192,6 +192,7 @@ open class FilesBaseTest: WidgetsBaseTest() {
             e.printStackTrace()
             assert(false) { "file create failed" }
         }
+        scenario.close()
         return createdFileUri!!
     }
 
