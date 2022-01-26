@@ -12,14 +12,15 @@ import io.mockk.unmockkObject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.test.TestCoroutineDispatcher
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import ol.ko.docshortcut.utils.FileUrisDataStore
 import org.junit.After
 import org.junit.Before
 import java.io.File
 
 @ExperimentalCoroutinesApi
-open class DataStoreBaseTest(protected val testDispatcher: TestCoroutineDispatcher = TestCoroutineDispatcher()) {
+open class DataStoreBaseTest(protected val testDispatcher: TestDispatcher = UnconfinedTestDispatcher()) {
 
     private lateinit var preferencesDataStoreFile: File
     protected lateinit var testDataStore: DataStore<Preferences>
