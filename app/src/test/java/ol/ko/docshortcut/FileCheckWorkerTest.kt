@@ -1,19 +1,13 @@
 package ol.ko.docshortcut
 
-import android.appwidget.AppWidgetManager
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.work.ListenableWorker.Result
 import androidx.work.testing.TestListenableWorkerBuilder
-import io.mockk.Runs
 import io.mockk.every
-import io.mockk.just
-import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.unmockkObject
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
@@ -35,7 +29,6 @@ class FileCheckWorkerTest: DataStoreBaseTest() {
         const val fileUriStringBase = "content://com.android.providers.downloads.documents/document/msf%3A13123"
         const val WIDGET_COUNT = 2
     }
-    private lateinit var appWidgetManagerMock : AppWidgetManager
 
     private fun buildContentUri(appWidgetIdx: Int) = "$fileUriStringBase${appWidgetIdx - APPWIDGET_ID}"
 
@@ -49,20 +42,10 @@ class FileCheckWorkerTest: DataStoreBaseTest() {
         }
 
         mockkObject(ContentResolverUtils)
-
-        appWidgetManagerMock = mockk {
-            every { updateAppWidget(more(APPWIDGET_ID, andEquals = true), any()) } just Runs
-        }
-        mockkStatic(AppWidgetManager::class)
-        every { AppWidgetManager.getInstance(any()) } returns appWidgetManagerMock
     }
 
     @After
-    fun tearDown() {
-        unmockkObject(ContentResolverUtils)
-
-        unmockkStatic(AppWidgetManager::class)
-    }
+    fun tearDown() = unmockkObject(ContentResolverUtils)
 
     @Test
     fun workerChecks() {
@@ -74,11 +57,11 @@ class FileCheckWorkerTest: DataStoreBaseTest() {
     @Test
     fun becomesInvalid() {
         every { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(APPWIDGET_ID))) } returns true
-        every { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(APPWIDGET_ID + 1))) } returns false
+        every { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(APPWIDGET_ID + WIDGET_COUNT - 1))) } returns false
 
         assertEquals(Result.success(), doWork())
 
-        verify { appWidgetManagerMock.updateAppWidget(APPWIDGET_ID + 1, any()) }
+        BroadcastIntentUtil.checkBroadcastIntents(intArrayOf(APPWIDGET_ID + WIDGET_COUNT - 1))
     }
 
     @Test
@@ -86,11 +69,11 @@ class FileCheckWorkerTest: DataStoreBaseTest() {
     fun becomesValid() {
         becomesInvalid()
 
-        every { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(APPWIDGET_ID + 1))) } returns true
+        every { ContentResolverUtils.uriFileExists(any(), eq(buildContentUri(APPWIDGET_ID + WIDGET_COUNT - 1))) } returns true
 
         assertEquals(Result.success(), doWork())
 
-        verify { appWidgetManagerMock.updateAppWidget(APPWIDGET_ID + 1, any()) }
+        BroadcastIntentUtil.checkBroadcastIntents(intArrayOf(APPWIDGET_ID + WIDGET_COUNT - 1))
     }
 
     private fun doWork(): Result = runBlocking {

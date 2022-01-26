@@ -60,13 +60,8 @@ class FileCheckWorker(appContext: Context, workerParams: WorkerParameters) :
                     Log.d(TAG, "$appWidgetId: $isCurrentlyValid")
 //                    println("$appWidgetId: $isCurrentlyValid")
                     if (isCurrentlyValid != it.lastIsValid) {
-                        ShortcutAppWidget.updateAppWidget(
-                            applicationContext,
-                            AppWidgetManager.getInstance(applicationContext),
-                            appWidgetId,
-                            savedUriString.uriString,
-                            isCurrentlyValid
-                        )
+                        // onUpdate() will do markUriPref()
+                        ShortcutAppWidget.requestWidgetsUpdate(applicationContext, appWidgetId)
                     }
                 }
             }

@@ -3,7 +3,9 @@ package ol.ko.docshortcut
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.util.TypedValue
 import android.widget.RemoteViews
@@ -24,6 +26,22 @@ import ol.ko.docshortcut.work.FileCheckWorker
 class ShortcutAppWidget : AppWidgetProvider() {
 
     companion object {
+        internal fun requestWidgetsUpdate(context: Context, appWidgetId: Int = AppWidgetManager.INVALID_APPWIDGET_ID) {
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val appWidgetIds = if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID)
+                appWidgetManager.getAppWidgetIds(ComponentName(context, ShortcutAppWidget::class.java))
+            else
+                arrayOf(appWidgetId).toIntArray()
+            if (appWidgetIds.isNotEmpty()) {
+                context.sendBroadcast(
+                    Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE).putExtra(
+                        AppWidgetManager.EXTRA_APPWIDGET_IDS,
+                        appWidgetIds
+                    )
+                )
+            }
+        }
+
         internal fun updateAppWidget(
             context: Context,
             appWidgetManager: AppWidgetManager,

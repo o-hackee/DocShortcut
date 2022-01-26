@@ -1,7 +1,6 @@
 package ol.ko.docshortcut.activities
 
 import android.app.Activity
-import android.app.Application
 import android.appwidget.AppWidgetManager
 import android.content.Intent
 import androidx.lifecycle.Lifecycle
@@ -16,15 +15,14 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import ol.ko.docshortcut.BroadcastIntentUtil
 import ol.ko.docshortcut.ui.MainActivity
-import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.core.AllOf.allOf
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.Shadows
 
 @RunWith(AndroidJUnit4::class)
 class MainActivityTest {
@@ -73,7 +71,7 @@ class MainActivityTest {
 
         // also make sure the widget is being refreshed (e.g. if the URI is for some reason invalid, the user would
         // expect to the the error indication in the widget UI as well after unsuccessful document view)
-        checkBroadcastIntents(IntArray(1) { APPWIDGET_ID })
+        BroadcastIntentUtil.checkBroadcastIntents(IntArray(1) { APPWIDGET_ID })
         scenario.close()
     }
 
@@ -85,19 +83,7 @@ class MainActivityTest {
         val scenario = launchActivity<MainActivity>()
         assertEquals(Lifecycle.State.RESUMED, scenario.state)
 
-        checkBroadcastIntents(appWidgetIds)
+        BroadcastIntentUtil.checkBroadcastIntents(appWidgetIds)
         scenario.close()
-    }
-
-    private fun checkBroadcastIntents(appWidgetIds: IntArray) {
-        val intents = Shadows.shadowOf(ApplicationProvider.getApplicationContext<Application>()).broadcastIntents
-        assertEquals(1, intents.size)
-        val intent = intents.first()
-        assertThat(
-            intent, allOf(
-                IntentMatchers.hasAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE),
-                IntentMatchers.hasExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
-            )
-        )
     }
 }
