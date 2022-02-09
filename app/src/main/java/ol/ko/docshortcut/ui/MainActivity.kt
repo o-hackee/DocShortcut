@@ -13,6 +13,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import ol.ko.docshortcut.R
 import ol.ko.docshortcut.ShortcutAppWidget
+import ol.ko.docshortcut.WidgetUtils
 import ol.ko.docshortcut.databinding.ActivityMainBinding
 import java.io.FileNotFoundException
 
@@ -59,7 +60,7 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "onStart ${intent.action} ${intent.extras}")
 
         // the problem is steadily observed on API 29 emulator and sporadically - on real device
-        ShortcutAppWidget.requestWidgetsUpdate(this)
+        WidgetUtils.requestWidgetsUpdate(this)
 //            Toast.makeText(context, R.string.updating, Toast.LENGTH_SHORT).show()
     }
 
@@ -106,6 +107,8 @@ class MainActivity : AppCompatActivity() {
             Log.e(TAG, "$fileUriString: another exception", ex)
             Toast.makeText(this, "An error occurred while trying to open $fileUriString", Toast.LENGTH_LONG).show()
         }
-        ShortcutAppWidget.requestWidgetsUpdate(this, appWidgetId)
+
+        // TODO make sure this works for glance widgets
+        WidgetUtils.requestWidgetsUpdate(this, appWidgetId)
     }
 }

@@ -10,6 +10,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import ol.ko.docshortcut.ShortcutAppWidget
+import ol.ko.docshortcut.WidgetUtils
 import ol.ko.docshortcut.utils.ContentResolverUtils
 import ol.ko.docshortcut.utils.FileUrisDataStore
 import ol.ko.docshortcut.utils.FileUrisRepository
@@ -61,7 +62,7 @@ class FileCheckWorker(appContext: Context, workerParams: WorkerParameters) :
 //                    println("$appWidgetId: $isCurrentlyValid")
                     if (isCurrentlyValid != it.lastIsValid) {
                         // onUpdate() will do markUriPref()
-                        ShortcutAppWidget.requestWidgetsUpdate(applicationContext, appWidgetId)
+                        WidgetUtils.requestWidgetsUpdate(applicationContext, appWidgetId)
                     }
                 }
             }
