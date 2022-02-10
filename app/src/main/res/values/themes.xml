@@ -15,9 +15,9 @@
     </style>
 
     <style name="Theme.DocShortcut.AppWidgetContainerParent" parent="@android:style/Theme.DeviceDefault">
-        <item name="appWidgetRadius">8dp</item>
-        <item name="appWidgetPadding">4dp</item>
-        <item name="appWidgetInnerRadius">4dp</item>
+        <item name="appWidgetRadius">@dimen/app_widget_radius</item>
+        <item name="appWidgetPadding">@dimen/app_widget_padding</item>
+        <item name="appWidgetInnerRadius">@dimen/app_widget_inner_radius</item>
     </style>
 
     <style name="Theme.DocShortcut.AppWidgetContainer" parent="Theme.DocShortcut.AppWidgetContainerParent" />
