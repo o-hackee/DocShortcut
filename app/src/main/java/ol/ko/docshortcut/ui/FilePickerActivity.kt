@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import ol.ko.docshortcut.R
 import ol.ko.docshortcut.ShortcutGlanceWidget
 import ol.ko.docshortcut.ShortcutGlanceWidget.Companion.fileUriPreferenceKey
+import ol.ko.docshortcut.ShortcutGlanceWidgetReceiver.Companion.extractAppWidgetId
 import ol.ko.docshortcut.databinding.ActivityFilePickerBinding
 import ol.ko.docshortcut.utils.FileUrisDataStore
 import ol.ko.docshortcut.utils.FileUrisRepository
@@ -81,23 +82,13 @@ class FilePickerActivity : AppCompatActivity() {
             val context = this@FilePickerActivity
             val glanceId = GlanceAppWidgetManager(context).getGlanceIds(ShortcutGlanceWidget::class.java).lastOrNull()
 
-            // being paranoid
-            val parseComponents: (String) -> Map<String, String> = {
-                val startIndex = it.indexOf('(')
-                val endIndex = it.indexOf(')', startIndex + 1)
-                val inParenthesis = it.substring(startIndex + 1, endIndex)
-                val pairs = inParenthesis.split(',')
-                pairs.associate { pairString ->
-                    val (name, value) = pairString.split('=')
-                    name to value
-                }
-            }
-            val glanceAppWidgetId = parseComponents(glanceId.toString())["appWidgetId"]?.toIntOrNull()
-            if (glanceAppWidgetId != appWidgetId) {
-                Log.e(TAG, "glance widget id mismatch $glanceAppWidgetId, expected $appWidgetId")
-            }
-
             glanceId?.let {
+                // being paranoid
+                val glanceAppWidgetId = extractAppWidgetId(glanceId)
+                if (glanceAppWidgetId != appWidgetId) {
+                    Log.e(TAG, "glance widget id mismatch $glanceAppWidgetId, expected $appWidgetId")
+                }
+
                 updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { preferences ->
                     preferences.toMutablePreferences()
                         .apply {
