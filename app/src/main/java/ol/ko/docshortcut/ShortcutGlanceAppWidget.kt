@@ -49,15 +49,14 @@ class ShortcutGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
 
     override val glanceAppWidget: GlanceAppWidget = ShortcutGlanceWidget()
 
-    // TODO test this on the next stage
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
-//        FileCheckWorker.start(context)
+        FileCheckWorker.start(context)
     }
 
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
-//        FileCheckWorker.stop(context)
+        FileCheckWorker.stop(context)
     }
 }
 

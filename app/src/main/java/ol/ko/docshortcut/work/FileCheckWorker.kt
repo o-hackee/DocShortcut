@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -21,8 +22,10 @@ class FileCheckWorker(appContext: Context, workerParams: WorkerParameters) :
 
             val checkFilesWorkRequest =
                 PeriodicWorkRequestBuilder<FileCheckWorker>(
-                    repeatIntervalInDays, TimeUnit.DAYS,
-                    flexIntervalInHours, TimeUnit.HOURS
+//                    repeatIntervalInDays, TimeUnit.DAYS,
+//                    flexIntervalInHours, TimeUnit.HOURS
+                    PeriodicWorkRequest.MIN_PERIODIC_INTERVAL_MILLIS, TimeUnit.MILLISECONDS,
+                    PeriodicWorkRequest.MIN_PERIODIC_FLEX_MILLIS, TimeUnit.MILLISECONDS,
                 )
                     .setConstraints(
                         Constraints.Builder()

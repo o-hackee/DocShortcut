@@ -9,7 +9,6 @@ import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import ol.ko.docshortcut.utils.ContentResolverUtils
 
-// TODO rename the file in the next commit
 object GlanceWidgetUtils {
 
     private const val TAG = "OLKO"

@@ -62,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         // the problem with stale UI ("Tap to update", i.e. appwidget_text)
         // is steadily observed on API 29 emulator and sporadically - on real device
         lifecycleScope.launch {
+            // alternatively start one-time work request
             GlanceWidgetUtils.updateWidgets(this@MainActivity, onlyIfValidityChanged = false)
         }
     }
@@ -110,6 +111,7 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "An error occurred while trying to open $fileUriString", Toast.LENGTH_LONG).show()
         }
 
+        // alternatively start one-time work request
         lifecycleScope.launch {
             GlanceWidgetUtils.updateWidget(this@MainActivity, appWidgetId)
         }
