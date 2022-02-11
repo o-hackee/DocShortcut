@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
@@ -18,8 +19,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ol.ko.docshortcut.R
 import ol.ko.docshortcut.ShortcutGlanceWidget
+import ol.ko.docshortcut.ShortcutGlanceWidget.Companion.appWidgetIdPreferenceKey
 import ol.ko.docshortcut.ShortcutGlanceWidget.Companion.fileUriPreferenceKey
-import ol.ko.docshortcut.ShortcutGlanceWidgetReceiver.Companion.extractAppWidgetId
 import ol.ko.docshortcut.databinding.ActivityFilePickerBinding
 import ol.ko.docshortcut.utils.FileUrisDataStore
 import ol.ko.docshortcut.utils.FileUrisRepository
@@ -84,6 +85,18 @@ class FilePickerActivity : AppCompatActivity() {
 
             glanceId?.let {
                 // being paranoid
+                fun extractAppWidgetId(glanceId: GlanceId): Int? {
+                    return with(glanceId.toString()) {
+                        val startIndex = indexOf('(')
+                        val endIndex = indexOf(')', startIndex + 1)
+                        val inParenthesis = substring(startIndex + 1, endIndex)
+                        val pairs = inParenthesis.split(',')
+                        pairs.associate { pairString ->
+                            val (name, value) = pairString.split('=')
+                            name to value
+                        }
+                    }["appWidgetId"]?.toIntOrNull()
+                }
                 val glanceAppWidgetId = extractAppWidgetId(glanceId)
                 if (glanceAppWidgetId != appWidgetId) {
                     Log.e(TAG, "glance widget id mismatch $glanceAppWidgetId, expected $appWidgetId")
@@ -92,6 +105,7 @@ class FilePickerActivity : AppCompatActivity() {
                 updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { preferences ->
                     preferences.toMutablePreferences()
                         .apply {
+                            this[appWidgetIdPreferenceKey] = appWidgetId
                             this[fileUriPreferenceKey] = fileUriString
 //                            this[isFileUriValidPreferenceKey] = true
                         }

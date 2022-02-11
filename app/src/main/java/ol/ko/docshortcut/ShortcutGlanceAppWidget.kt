@@ -12,12 +12,12 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
-import androidx.glance.LocalGlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
@@ -37,7 +37,6 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import ol.ko.docshortcut.ShortcutGlanceWidgetReceiver.Companion.extractAppWidgetId
 import ol.ko.docshortcut.ui.MainActivity
 import ol.ko.docshortcut.utils.ContentResolverUtils
 import ol.ko.docshortcut.work.FileCheckWorker
@@ -46,20 +45,6 @@ class ShortcutGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
     companion object {
         private const val TAG = "OLKO"
 
-        // TODO creating own stable ID and store that ID in the state attached to the App Widget (if an ID is still needed)
-        fun extractAppWidgetId(glanceId: GlanceId): Int? {
-            val parseComponents: (String) -> Map<String, String> = {
-                val startIndex = it.indexOf('(')
-                val endIndex = it.indexOf(')', startIndex + 1)
-                val inParenthesis = it.substring(startIndex + 1, endIndex)
-                val pairs = inParenthesis.split(',')
-                pairs.associate { pairString ->
-                    val (name, value) = pairString.split('=')
-                    name to value
-                }
-            }
-            return parseComponents(glanceId.toString())["appWidgetId"]?.toIntOrNull()
-        }
     }
 
     override val glanceAppWidget: GlanceAppWidget = ShortcutGlanceWidget()
@@ -89,6 +74,7 @@ class ShortcutGlanceWidget: GlanceAppWidget() {
 
         val fileUriPreferenceKey = stringPreferencesKey(fileUriKey)
         val isFileUriValidPreferenceKey = booleanPreferencesKey("isvalid-key")
+        val appWidgetIdPreferenceKey = intPreferencesKey(appWidgetIdKey)
 
         val fileUriActionParameterKey = ActionParameters.Key<String>(fileUriKey)
         val appWidgetIdActionParameterKey = ActionParameters.Key<Int>(appWidgetIdKey)
@@ -140,7 +126,7 @@ class ShortcutGlanceWidget: GlanceAppWidget() {
                 .fillMaxSize()
                 .padding(R.dimen.app_widget_padding)
             fileUriString?.let {
-               extractAppWidgetId(LocalGlanceId.current)?.let { appWidgetId ->
+               prefs[appWidgetIdPreferenceKey]?.let { appWidgetId ->
                    modifier = modifier.clickable(onClick = actionRunCallback<ActivityActionCallback>(actionParametersOf(
                        fileUriActionParameterKey to fileUriString,
                        appWidgetIdActionParameterKey to appWidgetId
