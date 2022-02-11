@@ -8,7 +8,6 @@
     <string name="main_activity_prompt">Use system Widgets tool to set up your shortcuts</string>
     <string name="unknown_document">Unknown document</string>
     <string name="close_main">Close</string>
-    <string name="updating">Updating your widgets…</string>
     <string name="about">About</string>
     <string name="about_text">Minimalistic utility to create document shortcuts as app widgets\
         \

@@ -49,12 +49,7 @@ class ShortcutGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
 
     override val glanceAppWidget: GlanceAppWidget = ShortcutGlanceWidget()
 
-    override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
-        super.onUpdate(context, appWidgetManager, appWidgetIds)
-        Log.d(TAG, "ShortcutGlanceWidgetReceiver onUpdate()")
-        // TODO where belongs former markUriPref() functionality?
-    }
-
+    // TODO test this on the next stage
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
 //        FileCheckWorker.start(context)
@@ -69,6 +64,9 @@ class ShortcutGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
 class ShortcutGlanceWidget: GlanceAppWidget() {
 
     companion object {
+
+        private const val TAG = "OLKO"
+
         private const val fileUriKey = "fileuri-key"
         private const val appWidgetIdKey = "appwidgetid-key"
 
@@ -78,8 +76,6 @@ class ShortcutGlanceWidget: GlanceAppWidget() {
 
         val fileUriActionParameterKey = ActionParameters.Key<String>(fileUriKey)
         val appWidgetIdActionParameterKey = ActionParameters.Key<Int>(appWidgetIdKey)
-
-        const val DEFAULT_VALID = true
     }
 
     override val stateDefinition: GlanceStateDefinition<*> = PreferencesGlanceStateDefinition
@@ -96,7 +92,7 @@ class ShortcutGlanceWidget: GlanceAppWidget() {
         ) {
             val prefs = currentState<Preferences>()
             val fileUriString = prefs[fileUriPreferenceKey]
-            val isValid = prefs[isFileUriValidPreferenceKey] ?: DEFAULT_VALID
+            val isValid = prefs[isFileUriValidPreferenceKey] ?: true
 
             val context = LocalContext.current
             val fileName = fileUriString?.let {
@@ -133,6 +129,7 @@ class ShortcutGlanceWidget: GlanceAppWidget() {
                    )))
                }
             }
+            Log.d(TAG, "composing $fileName")
             Text(
                 text = fileName,
                 modifier = modifier,

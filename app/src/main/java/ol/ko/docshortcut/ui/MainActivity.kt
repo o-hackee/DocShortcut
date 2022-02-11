@@ -11,9 +11,10 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import ol.ko.docshortcut.GlanceWidgetUtils
 import ol.ko.docshortcut.R
-import ol.ko.docshortcut.ShortcutAppWidget
-import ol.ko.docshortcut.WidgetUtils
 import ol.ko.docshortcut.databinding.ActivityMainBinding
 import java.io.FileNotFoundException
 
@@ -22,7 +23,6 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "OLKO"
 
-        const val PROXY_REQUEST = 1
         const val EXTRA_PROXY_REQUEST_KEY = "PROXY_REQUEST"
         const val EXTRA_URI_KEY = "URI"
 
@@ -59,9 +59,11 @@ class MainActivity : AppCompatActivity() {
         super.onStart()
         Log.d(TAG, "onStart ${intent.action} ${intent.extras}")
 
-        // the problem is steadily observed on API 29 emulator and sporadically - on real device
-        WidgetUtils.requestWidgetsUpdate(this)
-//            Toast.makeText(context, R.string.updating, Toast.LENGTH_SHORT).show()
+        // the problem with stale UI ("Tap to update", i.e. appwidget_text)
+        // is steadily observed on API 29 emulator and sporadically - on real device
+        lifecycleScope.launch {
+            GlanceWidgetUtils.updateWidgets(this@MainActivity, onlyIfValidityChanged = false)
+        }
     }
 
     private fun close() {
@@ -108,7 +110,8 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "An error occurred while trying to open $fileUriString", Toast.LENGTH_LONG).show()
         }
 
-        // TODO make sure this works for glance widgets
-        WidgetUtils.requestWidgetsUpdate(this, appWidgetId)
+        lifecycleScope.launch {
+            GlanceWidgetUtils.updateWidget(this@MainActivity, appWidgetId)
+        }
     }
 }

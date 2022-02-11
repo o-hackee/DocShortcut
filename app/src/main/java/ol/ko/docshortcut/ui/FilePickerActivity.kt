@@ -14,16 +14,13 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ol.ko.docshortcut.R
 import ol.ko.docshortcut.ShortcutGlanceWidget
 import ol.ko.docshortcut.ShortcutGlanceWidget.Companion.appWidgetIdPreferenceKey
 import ol.ko.docshortcut.ShortcutGlanceWidget.Companion.fileUriPreferenceKey
+import ol.ko.docshortcut.ShortcutGlanceWidget.Companion.isFileUriValidPreferenceKey
 import ol.ko.docshortcut.databinding.ActivityFilePickerBinding
-import ol.ko.docshortcut.utils.FileUrisDataStore
-import ol.ko.docshortcut.utils.FileUrisRepository
 
 class FilePickerActivity : AppCompatActivity() {
 
@@ -74,12 +71,9 @@ class FilePickerActivity : AppCompatActivity() {
 
         contentResolver.takePersistableUriPermission(fileUri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         val fileUriString = fileUri.toString()
-        lifecycleScope.launch {
-            FileUrisRepository(FileUrisDataStore.getInstance(this@FilePickerActivity)).saveUriPref(appWidgetId, fileUriString)
-        }
 
         // It is the responsibility of the configuration activity to update the app widget
-        CoroutineScope(Dispatchers.Main).launch {
+        lifecycleScope.launch {
             val context = this@FilePickerActivity
             val glanceId = GlanceAppWidgetManager(context).getGlanceIds(ShortcutGlanceWidget::class.java).lastOrNull()
 
@@ -107,7 +101,7 @@ class FilePickerActivity : AppCompatActivity() {
                         .apply {
                             this[appWidgetIdPreferenceKey] = appWidgetId
                             this[fileUriPreferenceKey] = fileUriString
-//                            this[isFileUriValidPreferenceKey] = true
+                            this[isFileUriValidPreferenceKey] = true
                         }
                 }
                 ShortcutGlanceWidget().update(context, glanceId)
