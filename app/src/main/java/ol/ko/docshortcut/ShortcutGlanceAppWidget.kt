@@ -2,6 +2,7 @@ package ol.ko.docshortcut
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.util.Log
 import android.util.TypedValue
@@ -17,10 +18,13 @@ import androidx.glance.GlanceModifier
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.LocalGlanceId
+import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
-import androidx.glance.appwidget.action.actionStartActivity
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.background
@@ -80,8 +84,14 @@ class ShortcutGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
 class ShortcutGlanceWidget: GlanceAppWidget() {
 
     companion object {
-        val fileUriPreferenceKey = stringPreferencesKey("fileuri-key")
+        private const val fileUriKey = "fileuri-key"
+        private const val appWidgetIdKey = "appwidgetid-key"
+
+        val fileUriPreferenceKey = stringPreferencesKey(fileUriKey)
         val isFileUriValidPreferenceKey = booleanPreferencesKey("isvalid-key")
+
+        val fileUriActionParameterKey = ActionParameters.Key<String>(fileUriKey)
+        val appWidgetIdActionParameterKey = ActionParameters.Key<Int>(appWidgetIdKey)
 
         const val DEFAULT_VALID = true
     }
@@ -131,9 +141,10 @@ class ShortcutGlanceWidget: GlanceAppWidget() {
                 .padding(R.dimen.app_widget_padding)
             fileUriString?.let {
                extractAppWidgetId(LocalGlanceId.current)?.let { appWidgetId ->
-                   // might use ActionParameters and TODO remove dependency on appWidgetId
-                   val intent = MainActivity.createProxyIntent(context, it, appWidgetId)
-                   modifier = modifier.clickable(onClick = actionStartActivity(intent))
+                   modifier = modifier.clickable(onClick = actionRunCallback<ActivityActionCallback>(actionParametersOf(
+                       fileUriActionParameterKey to fileUriString,
+                       appWidgetIdActionParameterKey to appWidgetId
+                   )))
                }
             }
             Text(
@@ -158,4 +169,17 @@ class ShortcutGlanceWidget: GlanceAppWidget() {
             this.cornerRadius(R.dimen.app_widget_radius)
         }
     }
+}
+
+class ActivityActionCallback : ActionCallback {
+    override suspend fun onRun(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        context.startActivity(
+            MainActivity.createProxyIntent(
+                context,
+                parameters.getOrDefault(ShortcutGlanceWidget.fileUriActionParameterKey, ""),
+                parameters.getOrDefault(ShortcutGlanceWidget.appWidgetIdActionParameterKey, AppWidgetManager.INVALID_APPWIDGET_ID)
+            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    }
+
 }
