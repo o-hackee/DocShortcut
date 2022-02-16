@@ -9,17 +9,10 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.glance.GlanceId
-import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.glance.appwidget.state.updateAppWidgetState
-import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
+import ol.ko.docshortcut.GlanceWidgetUtils
 import ol.ko.docshortcut.R
-import ol.ko.docshortcut.ShortcutGlanceWidget
-import ol.ko.docshortcut.ShortcutGlanceWidget.Companion.appWidgetIdPreferenceKey
-import ol.ko.docshortcut.ShortcutGlanceWidget.Companion.fileUriPreferenceKey
-import ol.ko.docshortcut.ShortcutGlanceWidget.Companion.isFileUriValidPreferenceKey
 import ol.ko.docshortcut.databinding.ActivityFilePickerBinding
 
 class FilePickerActivity : AppCompatActivity() {
@@ -74,38 +67,7 @@ class FilePickerActivity : AppCompatActivity() {
 
         // It is the responsibility of the configuration activity to update the app widget
         lifecycleScope.launch {
-            val context = this@FilePickerActivity
-            val glanceId = GlanceAppWidgetManager(context).getGlanceIds(ShortcutGlanceWidget::class.java).lastOrNull()
-
-            glanceId?.let {
-                // being paranoid
-                fun extractAppWidgetId(glanceId: GlanceId): Int? {
-                    return with(glanceId.toString()) {
-                        val startIndex = indexOf('(')
-                        val endIndex = indexOf(')', startIndex + 1)
-                        val inParenthesis = substring(startIndex + 1, endIndex)
-                        val pairs = inParenthesis.split(',')
-                        pairs.associate { pairString ->
-                            val (name, value) = pairString.split('=')
-                            name to value
-                        }
-                    }["appWidgetId"]?.toIntOrNull()
-                }
-                val glanceAppWidgetId = extractAppWidgetId(glanceId)
-                if (glanceAppWidgetId != appWidgetId) {
-                    Log.e(TAG, "glance widget id mismatch $glanceAppWidgetId, expected $appWidgetId")
-                }
-
-                updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { preferences ->
-                    preferences.toMutablePreferences()
-                        .apply {
-                            this[appWidgetIdPreferenceKey] = appWidgetId
-                            this[fileUriPreferenceKey] = fileUriString
-                            this[isFileUriValidPreferenceKey] = true
-                        }
-                }
-                ShortcutGlanceWidget().update(context, glanceId)
-            }
+            GlanceWidgetUtils.fillInitialWidgetState(this@FilePickerActivity, appWidgetId, fileUriString)
         }
 
         // Make sure we pass back the original appWidgetId

@@ -30,6 +30,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Assert.assertNotNull
 import org.junit.Before
+import org.junit.Ignore
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
@@ -348,6 +349,7 @@ open class DocumentsBaseTest: FilesBaseTest() {
     }
 }
 
+@Ignore
 @RunWith(AndroidJUnit4::class)
 class DocumentsUiTest: DocumentsBaseTest() {
 
@@ -513,6 +515,7 @@ open class DocumentsAlteredBaseTest: DocumentsBaseTest() {
     }
 }
 
+@Ignore
 @RunWith(AndroidJUnit4::class)
 class DocumentsAlteredTest: DocumentsAlteredBaseTest() {
     private lateinit var fileName: String
@@ -585,6 +588,7 @@ class DocumentsAlteredTest: DocumentsAlteredBaseTest() {
     }
 }
 
+@Ignore
 @RunWith(AndroidJUnit4::class)
 class RemovableStorageTest: DocumentsAlteredBaseTest() {
     private lateinit var fileName: String
@@ -675,6 +679,7 @@ class RemovableStorageTest: DocumentsAlteredBaseTest() {
 // content://com.android.externalstorage.documents/document/0FF1-1E14%3APictures%2Fsample_photo.jpg
 // content://com.android.externalstorage.documents/document/0FF1-1E14%3AMusic%2Fsample_audio.mp3
 // but that's how the app works
+@Ignore
 @RunWith(AndroidJUnit4::class)
 class MediaTest : FilesBaseTest() {
 

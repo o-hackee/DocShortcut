@@ -1,7 +1,6 @@
 package ol.ko.docshortcut.activities
 
 import android.app.Activity
-import android.appwidget.AppWidgetManager
 import android.content.Intent
 import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
@@ -9,13 +8,10 @@ import androidx.test.core.app.launchActivity
 import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import io.mockk.Runs
-import io.mockk.every
-import io.mockk.just
-import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
-import ol.ko.docshortcut.BroadcastIntentUtil
+import io.mockk.coVerify
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import ol.ko.docshortcut.GlanceWidgetUtils
 import ol.ko.docshortcut.ui.MainActivity
 import org.hamcrest.core.AllOf.allOf
 import org.junit.After
@@ -30,19 +26,11 @@ class MainActivityTest {
         const val APPWIDGET_ID = 42
     }
 
-    private lateinit var appWidgetManagerMock : AppWidgetManager
-
     @Before
-    fun setUp() {
-         appWidgetManagerMock = mockk {
-            every { updateAppWidget(more(APPWIDGET_ID, andEquals = true), any()) } just Runs
-        }
-        mockkStatic(AppWidgetManager::class)
-        every { AppWidgetManager.getInstance(any()) } returns appWidgetManagerMock
-    }
+    fun setUp() = mockkObject(GlanceWidgetUtils)
 
     @After
-    fun tearDown() = unmockkStatic(AppWidgetManager::class)
+    fun tearDown() = unmockkObject(GlanceWidgetUtils)
 
     @Test
     fun testViewIntent() {
@@ -71,19 +59,16 @@ class MainActivityTest {
 
         // also make sure the widget is being refreshed (e.g. if the URI is for some reason invalid, the user would
         // expect to the the error indication in the widget UI as well after unsuccessful document view)
-        BroadcastIntentUtil.checkBroadcastIntents(IntArray(1) { APPWIDGET_ID })
+        coVerify { GlanceWidgetUtils.updateWidget(any(), APPWIDGET_ID) }
         scenario.close()
     }
 
     @Test
     fun testRefreshIntent() {
-        val appWidgetIds = IntArray(3) { i -> APPWIDGET_ID + i }
-        every { appWidgetManagerMock.getAppWidgetIds(any()) } returns appWidgetIds
-
         val scenario = launchActivity<MainActivity>()
         assertEquals(Lifecycle.State.RESUMED, scenario.state)
 
-        BroadcastIntentUtil.checkBroadcastIntents(appWidgetIds)
+        coVerify { GlanceWidgetUtils.updateWidgets(any(), false) }
         scenario.close()
     }
 }

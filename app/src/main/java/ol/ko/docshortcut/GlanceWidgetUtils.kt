@@ -2,6 +2,7 @@ package ol.ko.docshortcut
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.glance.GlanceId
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.getAppWidgetState
@@ -13,8 +14,51 @@ object GlanceWidgetUtils {
 
     private const val TAG = "OLKO"
 
+    var getGlanceAppWidgetManager: (Context) -> GlanceAppWidgetManager
+        @VisibleForTesting
+        internal set
+
+    init {
+        getGlanceAppWidgetManager = { context -> GlanceAppWidgetManager(context) }
+    }
+
+    suspend fun fillInitialWidgetState(context: Context, appWidgetId: Int, fileUriString: String) {
+
+        val glanceId = getGlanceAppWidgetManager(context).getGlanceIds(ShortcutGlanceWidget::class.java).lastOrNull()
+
+        glanceId?.let {
+            // being paranoid
+            fun extractAppWidgetId(glanceId: GlanceId): Int? {
+                return with(glanceId.toString()) {
+                    val startIndex = indexOf('(')
+                    val endIndex = indexOf(')', startIndex + 1)
+                    val inParenthesis = substring(startIndex + 1, endIndex)
+                    val pairs = inParenthesis.split(',')
+                    pairs.associate { pairString ->
+                        val (name, value) = pairString.split('=')
+                        name to value
+                    }
+                }["appWidgetId"]?.toIntOrNull()
+            }
+            val glanceAppWidgetId = extractAppWidgetId(glanceId)
+            if (glanceAppWidgetId != appWidgetId) {
+                Log.e(TAG, "glance widget id mismatch $glanceAppWidgetId, expected $appWidgetId")
+            }
+
+            updateAppWidgetState(context, PreferencesGlanceStateDefinition, glanceId) { preferences ->
+                preferences.toMutablePreferences()
+                    .apply {
+                        this[ShortcutGlanceWidget.appWidgetIdPreferenceKey] = appWidgetId
+                        this[ShortcutGlanceWidget.fileUriPreferenceKey] = fileUriString
+                        this[ShortcutGlanceWidget.isFileUriValidPreferenceKey] = true
+                    }
+            }
+            ShortcutGlanceWidget().update(context, glanceId)
+        }
+    }
+
     suspend fun updateWidget(context: Context, appWidgetId: Int) {
-        val glanceIds = GlanceAppWidgetManager(context).getGlanceIds(ShortcutGlanceWidget::class.java)
+        val glanceIds = getGlanceAppWidgetManager(context).getGlanceIds(ShortcutGlanceWidget::class.java)
         val glanceId = glanceIds.find {
             val prefs = getAppWidgetState(context, PreferencesGlanceStateDefinition, it)
             prefs[ShortcutGlanceWidget.appWidgetIdPreferenceKey] == appWidgetId
@@ -26,7 +70,7 @@ object GlanceWidgetUtils {
     }
 
     suspend fun updateWidgets(context: Context, onlyIfValidityChanged: Boolean = true) {
-        val glanceIds = GlanceAppWidgetManager(context).getGlanceIds(ShortcutGlanceWidget::class.java)
+        val glanceIds = getGlanceAppWidgetManager(context).getGlanceIds(ShortcutGlanceWidget::class.java)
         glanceIds.forEach { glanceId ->
             val validityChanged = updateValidity(context, glanceId)
 

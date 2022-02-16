@@ -17,22 +17,16 @@ import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import io.mockk.every
-import io.mockk.just
-import io.mockk.mockk
-import io.mockk.mockkStatic
-import io.mockk.Runs
-import io.mockk.unmockkStatic
+import io.mockk.coVerify
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
-import ol.ko.docshortcut.DataStoreBaseTest
+import ol.ko.docshortcut.GlanceWidgetUtils
 import ol.ko.docshortcut.ui.FilePickerActivity
 import ol.ko.docshortcut.R
 import org.hamcrest.core.AllOf.allOf
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
@@ -40,7 +34,7 @@ import org.junit.runner.RunWith
 
 @ExperimentalCoroutinesApi
 @RunWith(AndroidJUnit4::class)
-class FilePickerActivityTest: DataStoreBaseTest() {
+class FilePickerActivityTest {
     companion object {
         const val APPWIDGET_ID = 42
     }
@@ -80,10 +74,7 @@ class FilePickerActivityTest: DataStoreBaseTest() {
         Intents.intending(IntentMatchers.hasAction(Intent.ACTION_OPEN_DOCUMENT))
             .respondWith(Instrumentation.ActivityResult(Activity.RESULT_OK, Intent().setData(fileUri)))
 
-        mockkStatic(AppWidgetManager::class)
-        every { AppWidgetManager.getInstance(any()) } returns mockk {
-            every { updateAppWidget(APPWIDGET_ID, any()) } just Runs
-        }
+        mockkObject(GlanceWidgetUtils)
 
         Espresso.onView(withId(R.id.button)).perform(click())
 
@@ -94,7 +85,7 @@ class FilePickerActivityTest: DataStoreBaseTest() {
             assert(isReadPermission)
         }
 
-        verifyFileUriSaved(APPWIDGET_ID, fileUri.toString())
+        coVerify { GlanceWidgetUtils.fillInitialWidgetState(any(), APPWIDGET_ID, fileUri.toString()) }
 
         with(scenario.result) {
             assertEquals(Activity.RESULT_OK, resultCode)
@@ -104,7 +95,7 @@ class FilePickerActivityTest: DataStoreBaseTest() {
             )
         }
 
-        unmockkStatic(AppWidgetManager::class)
+        unmockkObject(GlanceWidgetUtils)
     }
 
     @Test
@@ -130,13 +121,4 @@ class FilePickerActivityTest: DataStoreBaseTest() {
         ).also {
             assertEquals(Lifecycle.State.RESUMED, it.state)
         }
-
-    private fun verifyFileUriSaved(appWidgetId: Int, fileUriString: String) = runBlocking {
-        val preferencesMap = testDataStore.data.first().asMap()
-        val key = preferencesMap.keys.find { it.name.contains(appWidgetId.toString()) }
-        assertNotNull(key)
-        val value = preferencesMap[key]
-        assertNotNull(value)
-        assert(value.toString().contains(fileUriString))
-    }
 }
