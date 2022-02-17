@@ -213,21 +213,21 @@ open class FilesBaseTest: WidgetsBaseTest() {
         button.click()
 
         filePickerNavigateToTestDocument(fileName, targetFolderLink, targetFolderName, useProviderLink, fromRemovableStorage).click()
-        val widgetView = getAddedWidget(fileName)
+        val widgetView = getAddedWidget(fileName, withDescription = false) // Glance doesn't support contentDescription for text
         assertNotNull(widgetView)
         return widgetView!!
     }
 
     private fun getAddedWidget(fileName: String, withDescription: Boolean = true): UiObject2? {
-        val addedWidgets = device.wait(Until.findObjects(By.desc(widgetLabel)), ACTION_TIMEOUT)
-        assertNotEquals(0, addedWidgets.size)
+            val addedWidgets = device.wait(Until.findObjects(By.desc(widgetLabel)), ACTION_TIMEOUT)
+            assertNotEquals(0, addedWidgets.size)
         return addedWidgets.find {
-            val selector = By.clazz(TextView::class.java).text(fileName)
-            if (withDescription) {
-                selector.desc(targetContext.getString(R.string.appwidget_text))
+                val selector = By.clazz(TextView::class.java).text(fileName)
+                if (withDescription) {
+                    selector.desc(targetContext.getString(R.string.appwidget_text))
+                }
+                it.hasObject(selector)
             }
-            it.hasObject(selector)
-        }
     }
 
     protected fun filePickerNavigateToTestDocument(fileName: String, targetFolderLink: String, targetFolderName: String, useProviderLink: Boolean, fromRemovableStorage: Boolean): UiObject2 {
@@ -349,7 +349,6 @@ open class DocumentsBaseTest: FilesBaseTest() {
     }
 }
 
-@Ignore
 @RunWith(AndroidJUnit4::class)
 class DocumentsUiTest: DocumentsBaseTest() {
 

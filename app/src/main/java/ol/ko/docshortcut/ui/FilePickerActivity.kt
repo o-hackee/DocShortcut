@@ -9,7 +9,8 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ol.ko.docshortcut.GlanceWidgetUtils
 import ol.ko.docshortcut.R
@@ -66,7 +67,7 @@ class FilePickerActivity : AppCompatActivity() {
         val fileUriString = fileUri.toString()
 
         // It is the responsibility of the configuration activity to update the app widget
-        lifecycleScope.launch {
+        CoroutineScope(Dispatchers.Main).launch { // lifecycleScope would not work: the job is likely to be canceled when the activity is finished i.e. very soon
             GlanceWidgetUtils.fillInitialWidgetState(this@FilePickerActivity, appWidgetId, fileUriString)
         }
 
