@@ -11,7 +11,8 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ol.ko.docshortcut.GlanceWidgetUtils
 import ol.ko.docshortcut.R
@@ -61,7 +62,7 @@ class MainActivity : AppCompatActivity() {
 
         // the problem with stale UI ("Tap to update", i.e. appwidget_text)
         // is steadily observed on API 29 emulator and sporadically - on real device
-        lifecycleScope.launch {
+        CoroutineScope(Dispatchers.Main).launch {
             // alternatively start one-time work request
             GlanceWidgetUtils.updateWidgets(this@MainActivity, onlyIfValidityChanged = false)
         }
@@ -112,7 +113,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         // alternatively start one-time work request
-        lifecycleScope.launch {
+        CoroutineScope(Dispatchers.Main).launch {
             GlanceWidgetUtils.updateWidget(this@MainActivity, appWidgetId)
         }
     }
