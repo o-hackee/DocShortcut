@@ -588,7 +588,6 @@ class DocumentsAlteredTest: DocumentsAlteredBaseTest() {
     }
 }
 
-@Ignore
 @RunWith(AndroidJUnit4::class)
 class RemovableStorageTest: DocumentsAlteredBaseTest() {
     private lateinit var fileName: String
@@ -679,7 +678,6 @@ class RemovableStorageTest: DocumentsAlteredBaseTest() {
 // content://com.android.externalstorage.documents/document/0FF1-1E14%3APictures%2Fsample_photo.jpg
 // content://com.android.externalstorage.documents/document/0FF1-1E14%3AMusic%2Fsample_audio.mp3
 // but that's how the app works
-@Ignore
 @RunWith(AndroidJUnit4::class)
 class MediaTest : FilesBaseTest() {
 
