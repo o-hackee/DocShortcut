@@ -16,6 +16,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.ActionParameters
@@ -113,31 +114,47 @@ class ShortcutGlanceWidget: GlanceAppWidget() {
                         ContextCompat.getColor(context, R.color.error)
                     }
                 })
-            // only supported by images, have to adapt the test
+            // only supported by images, had to adapt the test
             val contentDescription = context.getString(if (isValid) R.string.appwidget_text else R.string.appwidget_invalid_text)
 
-            var modifier = GlanceModifier
+            var innerViewModifier = GlanceModifier
                 .background(ImageProvider(R.drawable.app_widget_inner_view_res_background))
                 .fillMaxSize()
                 .padding(R.dimen.app_widget_padding)
             fileUriString?.let {
                prefs[appWidgetIdPreferenceKey]?.let { appWidgetId ->
-                   modifier = modifier.clickable(onClick = actionRunCallback<ActivityActionCallback>(actionParametersOf(
+                   innerViewModifier = innerViewModifier.clickable(onClick = actionRunCallback<ActivityActionCallback>(actionParametersOf(
                        fileUriActionParameterKey to fileUriString,
                        appWidgetIdActionParameterKey to appWidgetId
                    )))
                }
             }
             Log.d(TAG, "composing $fileName")
-            Text(
-                text = fileName,
-                modifier = modifier,
-                style = TextStyle(
-                    fontSize = 12.sp,
-                    color = ColorProvider(color)
-                )
-            )
+            if (!isValid) {
+                Column(modifier = innerViewModifier) {
+                    Image(provider = ImageProvider(R.drawable.ic_error), contentDescription = contentDescription)
+                    FileNameText(fileName, GlanceModifier, color)
+                }
+            } else {
+                FileNameText(fileName, innerViewModifier, color)
+            }
         }
+    }
+
+    @Composable
+    private fun FileNameText(
+        fileName: String,
+        textModifier: GlanceModifier,
+        color: Color
+    ) {
+        Text(
+            text = fileName,
+            modifier = textModifier,
+            style = TextStyle(
+                fontSize = 12.sp,
+                color = ColorProvider(color)
+            )
+        )
     }
 
     @Composable

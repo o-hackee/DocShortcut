@@ -415,15 +415,17 @@ open class DocumentsAlteredBaseTest: DocumentsBaseTest() {
             goHome()
             device.waitForIdle()
             assertEquals(fileName, widgetFileLabel.text)
-            assertEquals(targetContext.getString(R.string.appwidget_text), widgetFileLabel.contentDescription)
+//            assertEquals(targetContext.getString(R.string.appwidget_text), widgetFileLabel.contentDescription)
         } else {
             widgetView.click()
             // unable to catch Toast, just make sure document is not opened
             // also can be tried to view in another app (e.g. Contacts), also needs back or home then
             verifyUnableToViewDocument()
             goHome()
-            assertEquals(targetContext.getString(R.string.appwidget_invalid_text), widgetFileLabel.contentDescription)
+//            assertEquals(targetContext.getString(R.string.appwidget_invalid_text), widgetFileLabel.contentDescription)
         }
+        val labelParent = widgetView.findObject(By.clazz(TextView::class.java)).parent // layout changes
+        assertEquals(!shouldBeHandled, labelParent.hasObject(By.desc(targetContext.getString(R.string.appwidget_invalid_text))))
     }
 
     private fun verifyUnableToViewDocument() {
@@ -514,7 +516,6 @@ open class DocumentsAlteredBaseTest: DocumentsBaseTest() {
     }
 }
 
-@Ignore
 @RunWith(AndroidJUnit4::class)
 class DocumentsAlteredTest: DocumentsAlteredBaseTest() {
     private lateinit var fileName: String
