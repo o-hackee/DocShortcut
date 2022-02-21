@@ -97,7 +97,7 @@ dependencies {
     implementation 'androidx.datastore:datastore-preferences:1.0.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.0'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.0'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.4.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.4.1'
     implementation 'androidx.work:work-runtime-ktx:2.7.1'
 
     implementation "androidx.compose.ui:ui:$compose_version"
@@ -107,16 +107,16 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'androidx.test.ext:junit-ktx:1.1.3'
     testImplementation 'androidx.test:core-ktx:1.4.0'
-    testImplementation 'org.robolectric:robolectric:4.6.1'
-    testImplementation 'androidx.test.espresso:espresso-intents:3.5.0-alpha03' // https://github.com/robolectric/robolectric/issues/6593
-    testImplementation 'io.mockk:mockk:1.12.0'
+    testImplementation 'org.robolectric:robolectric:4.6.1' // intentionally not updating to 4.7.2, issues with test launch
+    testImplementation 'androidx.test.espresso:espresso-intents:3.5.0-alpha04' // https://github.com/robolectric/robolectric/issues/6593
+    testImplementation 'io.mockk:mockk:1.12.2'
     testImplementation 'androidx.work:work-testing:2.7.1'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.0'
 
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test:core-ktx:1.4.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
-    androidTestImplementation 'io.mockk:mockk-android:1.12.0'
+    androidTestImplementation 'io.mockk:mockk-android:1.12.1'
     androidTestImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.0'
     androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.2.0'
 }
